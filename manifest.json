@@ -8,7 +8,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "tab.html",
+    "default_popup": "popup.html",
     "default_icon": "listen.png"
   },
   "host_permissions": ["<all_urls>"]
