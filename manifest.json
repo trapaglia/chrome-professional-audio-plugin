@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Ecualizador de Pestaña",
-  "description": "Ecualiza el audio de la pestaña actual 💖",
+  "name": "Ecualizador Persistente",
+  "description": "Ecualizador con pestaña propia 💖",
   "version": "1.0",
-  "permissions": ["tabCapture"],
-//   "background": {
-//     "service_worker": "background.js"
-//   },
+  "permissions": ["tabCapture", "tabs"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "tab.html",
     "default_icon": "listen.png"
-  }
+  },
+  "host_permissions": ["<all_urls>"]
 }

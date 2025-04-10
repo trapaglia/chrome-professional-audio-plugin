@@ -4,11 +4,13 @@ body {
   font-family: 'Segoe UI', sans-serif;
   background-color: #fef6f9;
   color: #333;
-  width: 250px;
+  width: 100%;
 }
 
 .container {
   padding: 1em;
+  max-width: 400px;
+  margin: auto;
   text-align: center;
 }
 
@@ -20,10 +22,21 @@ button {
   padding: 10px 15px;
   cursor: pointer;
   font-size: 1em;
-  margin-top: 1em;
+  margin-bottom: 1em;
   transition: background-color 0.3s;
 }
 
 button:hover {
   background-color: #e35f92;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 1em;
+}
+
+input[type="range"] {
+  width: 100%;
 }
