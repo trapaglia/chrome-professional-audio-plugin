@@ -1,0 +1,21 @@
+/*├── my-extension/
+│   ├── manifest.json
+│   ├── popup.html
+│   ├── popup.js
+│   ├── styles.css
+│   └── icon.png (usa cualquier ícono por ahora)
+*/
+/* manifest.json */
+{
+  "manifest_version": 3,
+  "name": "Mi Primera Extensión",
+  "description": "Una extensión hecha con amor 💖",
+  "version": "1.0",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "listen.png"
+  },
+  "permissions": []
+}
+
+
