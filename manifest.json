@@ -1,16 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "Mi Primera Extensión",
-  "description": "Una extensión hecha con amor 💖",
+  "name": "Ecualizador de Pestaña",
+  "description": "Ecualiza el audio de la pestaña actual 💖",
   "version": "1.0",
+  "permissions": ["tabCapture"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": "listen.png"
-  },
-  "permissions": ["tabcapture"],
-  "background": {
-    "service_worker": "background.js"
   }
 }
-
-
