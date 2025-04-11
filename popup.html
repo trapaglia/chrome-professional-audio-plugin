@@ -1,24 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ecualizador 🎚️</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div class="container">
-      <h1>🎧 Ecualizador</h1>
-      <button id="abrir">Iniciar ecualizador</button>
-      <div class="slider-group">
-        <label>Graves</label>
-        <input type="range" min="-30" max="30" value="0" id="graves">
-        <label>Medios</label>
-        <input type="range" min="-30" max="30" value="0" id="medios">
-        <label>Agudos</label>
-        <input type="range" min="-30" max="30" value="0" id="agudos">
-      </div>
-    </div>
-    <script src="popup.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ecualizador 🎚️</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🎧 Ecualizador</h1>
+    <button id="activar">Activar Audio</button>
+    <label>Volumen</label>
+    <input type="range" min="0" max="2" step="0.1" value="1" id="volumen">
+  </div>
+  <script src="popup.js"></script>
+</body>
 </html>

@@ -1,38 +1,27 @@
 {
   "manifest_version": 3,
-  "name": "Ecualizador Persistente",
+  "name": "Sweet EQ Offscreen",
   "version": "1.0",
-  "description": "Ecualizador de audio que persiste aunque se cierre el popup",
+  "description": "Ecualizador con offscreen document 💖",
+  "permissions": [
+    "offscreen",
+    "tabCapture",
+    "storage",
+    "scripting",
+    "tabs",
+    "activeTab"
+  ],
   "action": {
     "default_popup": "popup.html",
-    "default_icon": {
-      "16": "listen.png",
-      "48": "listen.png",
-      "128": "listen.png"
-    }
+    "default_icon": "listen.png"
   },
-  "icons": {
-    "16": "listen.png",
-    "48": "listen.png",
-    "128": "listen.png"
-  },
-  "permissions": [
-    "storage",
-    "tabCapture",
-    "tabs",
-    "activeTab",
-    "scripting"
-  ],
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": [
+  "web_accessible_resources": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "resources": ["offscreen.html", "offscreen.js"],
+      "matches": ["<all_urls>"]
     }
-  ],
-  "host_permissions": [
-    "<all_urls>"
   ]
 }
