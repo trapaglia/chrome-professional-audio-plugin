@@ -1,14 +1,24 @@
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  if (message.target !== "offscreen") return;
-
-  const offscreenExists = await chrome.offscreen.hasDocument();
-
-  if (!offscreenExists) {
+async function asegurarOffscreen() {
+  const exists = await chrome.offscreen.hasDocument();
+  if (!exists) {
     await chrome.offscreen.createDocument({
       url: "offscreen.html",
       reasons: ["USER_MEDIA"],
-      justification: "Procesamiento de audio de la pestaña con filtros de amor 💖",
+      justification: "Visualizador necesita amor 💞"
     });
+  }
+}
+
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+
+  if (message.type === "abrir-offscreen") {
+    await asegurarOffscreen();
+    sendResponse()
+    return true;
+  }
+  
+  if (message.target === "offscreen") {
+    await asegurarOffscreen();
     // reenviar el mensaje al offscreen.js
     chrome.runtime.sendMessage(message);
   }
