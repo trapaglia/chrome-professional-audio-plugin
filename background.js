@@ -13,4 +13,11 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     chrome.runtime.sendMessage(message);
   }
 
+  if (message.type === "abrir-offscreen") {
+    //await asegurarOffscreen();
+    //sendResponse()
+    console.log("se comunicaron")
+    // return true;
+  }
+
 });

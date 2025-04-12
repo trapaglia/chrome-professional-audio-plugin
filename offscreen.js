@@ -2,6 +2,18 @@ let contexts = new Map();
 let filtros = new Map();
 let medias = new Map();
 
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === "popup-visualizer") {
+    popupPort = port;
+    console.log("[OFFSCREEN] Conectado al popup 🥰");
+
+    port.onDisconnect.addListener(() => {
+      popupPort = null;
+      console.log("[OFFSCREEN] Popup cerrado 😢");
+    });
+  }
+});
+
 chrome.runtime.onMessage.addListener(async (msg) => {
   if (msg.target !== "offscreen") return;
 
