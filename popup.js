@@ -45,6 +45,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 boton.addEventListener("click", async () => {
+  console.log("Activando audio...")
   const tabId = await getActiveTabId();
 
   if (!isActivo) {
