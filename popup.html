@@ -10,8 +10,18 @@
   <div class="container">
     <h1>🎧 Ecualizador</h1>
     <button id="activar">Activar Audio</button>
+
     <label>Volumen</label>
-    <input type="range" min="0" max="2" step="0.1" value="1" id="volumen">
+    <input type="range" min="0" max="2" step="0.1" value="1" id="volumen" />
+
+    <label>Graves</label>
+    <input type="range" min="-30" max="30" value="0" id="graves" />
+
+    <label>Medios</label>
+    <input type="range" min="-30" max="30" value="0" id="medios" />
+
+    <label>Agudos</label>
+    <input type="range" min="-30" max="30" value="0" id="agudos" />
   </div>
   <script src="popup.js"></script>
 </body>

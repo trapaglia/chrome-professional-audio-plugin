@@ -13,15 +13,21 @@ document.getElementById("activar").addEventListener("click", async () => {
     tabId,
     streamId,
     level: parseFloat(document.getElementById("volumen").value),
+    graves: parseFloat(document.getElementById("graves").value),
+    medios: parseFloat(document.getElementById("medios").value),
+    agudos: parseFloat(document.getElementById("agudos").value),
   });
 });
 
-document.getElementById("volumen").addEventListener("input", async (e) => {
-  const tabId = await getActiveTabId();
-  await chrome.runtime.sendMessage({
-    type: "adjust-volume",
-    target: "offscreen",
-    tabId,
-    level: parseFloat(e.target.value)
+["volumen", "graves", "medios", "agudos"].forEach((id) => {
+  document.getElementById(id).addEventListener("input", async (e) => {
+    const tabId = await getActiveTabId();
+    chrome.runtime.sendMessage({
+      type: "ajustar-filtro",
+      target: "offscreen",
+      tabId,
+      banda: id,
+      valor: parseFloat(e.target.value),
+    });
   });
 });

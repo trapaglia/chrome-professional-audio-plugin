@@ -1,5 +1,5 @@
 let contexts = new Map();
-let gains = new Map();
+let filtros = new Map();
 
 chrome.runtime.onMessage.addListener(async (msg) => {
   if (msg.target !== "offscreen") return;
@@ -16,18 +16,54 @@ chrome.runtime.onMessage.addListener(async (msg) => {
 
     const context = new AudioContext();
     const source = context.createMediaStreamSource(media);
-    const gain = context.createGain();
-    gain.gain.value = msg.level;
 
-    source.connect(gain);
-    gain.connect(context.destination);
+    const volume = context.createGain();
+    volume.gain.value = msg.level;
+    
+    const low = context.createBiquadFilter();
+    low.type = "lowshelf";
+    low.frequency.value = 60;
+    low.gain.value = msg.graves;
+
+    const mid = context.createBiquadFilter();
+    mid.type = "peaking";
+    mid.frequency.value = 1000;
+    mid.Q.value = 1;
+    mid.gain.value = msg.medios;
+
+    const high = context.createBiquadFilter();
+    high.type = "highshelf";
+    high.frequency.value = 8000;
+    high.gain.value = msg.agudos;
+
+    // conectar: source → volume → low → mid → high → output
+    source.connect(volume);
+    volume.connect(low);
+    low.connect(mid);
+    mid.connect(high);
+    high.connect(context.destination);
 
     contexts.set(msg.tabId, context);
-    gains.set(msg.tabId, gain);
+    filtros.set(msg.tabId, {volume, low, mid, high});
   }
 
-  if (msg.type === "adjust-volume") {
-    const gain = gains.get(msg.tabId);
-    if (gain) gain.gain.value = msg.level;
+  if (msg.type === "ajustar-filtro") {
+    const f = filtros.get(msg.tabId);
+    if (!f) return;
+
+    switch (msg.banda) {
+      case "volumen":
+        f.volume.gain.value = msg.valor;
+        break;
+      case "graves":
+        f.low.gain.value = msg.valor;
+        break;
+      case "medios":
+        f.mid.gain.value = msg.valor;
+        break;
+      case "agudos":
+        f.high.gain.value = msg.valor;
+        break;
+    }
   }
 });
