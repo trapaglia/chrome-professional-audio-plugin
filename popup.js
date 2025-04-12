@@ -1,6 +1,28 @@
 let isActivo = false;
 let boton = document.getElementById("activar");
 
+chrome.storage.local.get(["volumen", "graves", "medios", "agudos", "activo"], (data) => {
+  if (data.volumen !== undefined) document.getElementById("volumen").value = data.volumen;
+  if (data.graves !== undefined) document.getElementById("graves").value = data.graves;
+  if (data.medios !== undefined) document.getElementById("medios").value = data.medios;
+  if (data.agudos !== undefined) document.getElementById("agudos").value = data.agudos;
+
+  if (data.activo) {
+    isActivo = true;
+    boton.textContent = "Detener Audio 🔇";
+  }
+});
+
+function guardarEstado() {
+  chrome.storage.local.set({
+    volumen: parseFloat(document.getElementById("volumen").value),
+    graves: parseFloat(document.getElementById("graves").value),
+    medios: parseFloat(document.getElementById("medios").value),
+    agudos: parseFloat(document.getElementById("agudos").value),
+    activo: isActivo
+  });
+}
+
 async function getActiveTabId() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return tab.id;
@@ -45,5 +67,6 @@ boton.addEventListener("click", async () => {
       banda: id,
       valor: parseFloat(e.target.value),
     });
+    guardarEstado();
   });
 });
