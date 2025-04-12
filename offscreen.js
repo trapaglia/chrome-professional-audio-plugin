@@ -1,5 +1,6 @@
 let contexts = new Map();
 let filtros = new Map();
+let medias = new Map();
 
 chrome.runtime.onMessage.addListener(async (msg) => {
   if (msg.target !== "offscreen") return;
@@ -45,6 +46,7 @@ chrome.runtime.onMessage.addListener(async (msg) => {
 
     contexts.set(msg.tabId, context);
     filtros.set(msg.tabId, {volume, low, mid, high});
+    medias.set(msg.tabId, media);
   }
 
   if (msg.type === "ajustar-filtro") {
@@ -66,4 +68,27 @@ chrome.runtime.onMessage.addListener(async (msg) => {
         break;
     }
   }
+  if (msg.type === "stop-processing") {
+    const ctx = contexts.get(msg.tabId);
+    if (ctx) {
+      ctx.close(); // cierra el AudioContext
+      contexts.delete(msg.tabId);
+
+      const f = filtros.get(msg.tabId);
+      if (f) {
+        f.volume.disconnect();
+        f.low.disconnect();
+        f.mid.disconnect();
+        f.high.disconnect();
+        filtros.delete(msg.tabId);
+      }
+
+      const media = medias.get(msg.tabId);
+      if (media) {
+        media.getTracks().forEach(track => track.stop());
+      }
+      medias.delete(msg.tabId);
+    }
+  }
+
 });
