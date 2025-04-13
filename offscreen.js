@@ -2,6 +2,7 @@ let contexts = new Map();
 let filtros = new Map();
 let medias = new Map();
 let popupPort = null;
+let loops = new Map();
 
 // Función para asegurar que la página offscreen está lista y responder al mensaje
 async function asegurarOffscreen() {
@@ -24,11 +25,6 @@ chrome.runtime.onConnect.addListener((port) => {
 
 chrome.runtime.onMessage.addListener(async (msg) => {
   if (msg.target !== "offscreen") return;
-
-  // if (msg.type === "abrir-offscreen") {
-  //   await asegurarOffscreen();
-  //   return;
-  // }
 
   if (msg.type === "start-processing") {
     const media = await navigator.mediaDevices.getUserMedia({
@@ -62,12 +58,32 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     high.frequency.value = 8000;
     high.gain.value = msg.agudos;
 
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 256; // resolución (más alto = más detalle)
+
     // conectar: source → volume → low → mid → high → output
     source.connect(volume);
     volume.connect(low);
     low.connect(mid);
     mid.connect(high);
-    high.connect(context.destination);
+    high.connect(analyser);
+    analyser.connect(context.destination);
+
+    chrome.runtime.sendMessage({ type: "offscreen-alive" });
+    // enviar data al popup
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    function loop() {
+      analyser.getByteFrequencyData(dataArray);
+      if (popupPort) {
+        popupPort.postMessage({
+          type: "visualizer-data",
+          data: Array.from(dataArray)
+        });
+      }
+      const id = requestAnimationFrame(loop);
+      loops.set(msg.tabId, id);
+    }
+    loop();
 
     contexts.set(msg.tabId, context);
     filtros.set(msg.tabId, {volume, low, mid, high});

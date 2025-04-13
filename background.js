@@ -23,6 +23,9 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       chrome.runtime.sendMessage({ ...message, target: "offscreen" });
       console.log("[INFO] fin de procesamiento");
       break;
+    case "offscreen-alive":
+      console.log("[INFO] offscreen-alive");
+      break;
     default:
       console.log("[ERROR] message no identificado");
       break;

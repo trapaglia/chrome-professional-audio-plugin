@@ -51,6 +51,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+    // conexion P2P
+    if (message.type === "offscreen-alive") {
+      try {
+        const port = chrome.runtime.connect({ name: "popup-visualizer" });
+        estado.textContent = "Conectado al offscreen";
+
+        port.onDisconnect.addListener(() => {
+        estado.textContent = "Desconectado del offscreen";
+      });
+
+      port.onMessage.addListener((message) => {
+        estado.textContent = "Mensajes recibidos del offscreen";
+        if (message.type === "visualizer-data") {
+          estado.textContent = "Me pasaron espectro";
+        }
+        // Aquí puedes manejar los mensajes recibidos del offscreen.
+      });
+      } catch (error) {
+        estado.textContent = "Error al conectar al offscreen";
+        console.error("[POPUP] Error al conectar al offscreen:", error);
+      }
+    }
+  });
+
+  // Ejemplo: Enviar un mensaje al offscreen cuando se hace clic en un botón.
+  // const miBoton = document.getElementById('miBoton');
+  // if (miBoton) {
+  //   miBoton.addEventListener('click', () => {
+  //     port.postMessage({ action: "botonClic", data: "datos del botón" });
+  //   });
+  // }
+
   boton.addEventListener("click", async () => {
     const tabId = await getActiveTabId();
 
