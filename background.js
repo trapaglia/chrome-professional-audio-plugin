@@ -1,3 +1,9 @@
+// Clear previous session ID's.
+chrome.runtime.onStartup.addListener(function() {
+  console.log("Browser opened CLEARING CACHE");
+  chrome.storage.local.clear();
+});
+
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.target !== "offscreen") return;
 
@@ -11,13 +17,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     });
     // reenviar el mensaje al offscreen.js
     chrome.runtime.sendMessage(message);
-  }
-
-  if (message.type === "abrir-offscreen") {
-    //await asegurarOffscreen();
-    //sendResponse()
-    console.log("se comunicaron")
-    // return true;
   }
 
 });
