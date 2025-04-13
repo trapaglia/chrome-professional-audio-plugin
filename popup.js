@@ -38,7 +38,8 @@ function sendMessagePromise(message) {
 // Wait for zhe DOM to load
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Popup loaded');
-  let boton = document.getElementById("activar");
+  const boton = document.getElementById("activar");
+  const estado = document.getElementById("estado");
 
   chrome.storage.local.get(['capturingAudio'], function(result) {
     capturingAudio = result.capturingAudio || false;
@@ -49,18 +50,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       boton.textContent = "Activar Audio 🎤";
     }
   });
-
-
-  // chrome.runtime.sendMessage({ type: "abrir-offscreen", target: "offscreen" }, () => {
-  //   const port = chrome.runtime.connect({ name: "popup-visualizer" });
-  //   // port.onMessage.addListener((msg) => {
-  //   //   if (msg.type === "visualizer-data" && msg.data) {
-  //   //     drawVisualizer(msg.data);
-  //   //     console.log("entro a visualizer-data")
-  //   //   }
-  //   // });
-  //   console.log("entro a abrir-offscreen")
-  // });
 
   boton.addEventListener("click", async () => {
     const tabId = await getActiveTabId();
@@ -77,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId });
       await chrome.runtime.sendMessage({
         type: "start-processing",
-        target: "offscreen",
+        // target: "offscreen",
         tabId,
         streamId,
         level: parseFloat(document.getElementById("volumen").value),
@@ -112,7 +101,7 @@ async function getActiveTabId() {
     const tabId = await getActiveTabId();
     chrome.runtime.sendMessage({
       type: "ajustar-filtro",
-      target: "offscreen",
+      // target: "offscreen",
       tabId,
       banda: id,
       valor: parseFloat(e.target.value),

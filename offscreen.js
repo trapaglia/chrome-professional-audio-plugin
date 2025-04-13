@@ -1,6 +1,14 @@
 let contexts = new Map();
 let filtros = new Map();
 let medias = new Map();
+let popupPort = null;
+
+// Función para asegurar que la página offscreen está lista y responder al mensaje
+async function asegurarOffscreen() {
+  console.log("[OFFSCREEN] Página offscreen lista y funcionando 🚀");
+  // Simplemente devolvemos true para indicar que la página offscreen está lista
+  return true;
+}
 
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === "popup-visualizer") {
@@ -16,6 +24,11 @@ chrome.runtime.onConnect.addListener((port) => {
 
 chrome.runtime.onMessage.addListener(async (msg) => {
   if (msg.target !== "offscreen") return;
+
+  // if (msg.type === "abrir-offscreen") {
+  //   await asegurarOffscreen();
+  //   return;
+  // }
 
   if (msg.type === "start-processing") {
     const media = await navigator.mediaDevices.getUserMedia({
