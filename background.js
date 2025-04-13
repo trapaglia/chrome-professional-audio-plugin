@@ -30,6 +30,10 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       console.log("[INFO] debug");
       chrome.runtime.sendMessage({ ...message, target: "offscreen" });
       break;
+    case "give-me-viz":
+      // await createOffscreenDocument();
+      // chrome.runtime.sendMessage({ ...message, target: "offscreen" });
+      break;
     default:
       console.log("[ERROR] message no identificado");
       break;

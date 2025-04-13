@@ -3,7 +3,7 @@ let filtros = new Map();
 let medias = new Map();
 let popupPort = null;
 let loops = new Map();
-let viz = new Map();
+let viz = null;
 
 // Función para asegurar que la página offscreen está lista y responder al mensaje
 async function asegurarOffscreen() {
@@ -21,13 +21,33 @@ chrome.runtime.onConnect.addListener((port) => {
       popupPort = null;
       console.log("[OFFSCREEN] Popup cerrado 😢");
     });
-  }
-});
+
+    port.onMessage.addListener((msg) => {
+      if (msg.type === "give-me-viz") {
+        console.log("[INFO] give-me-viz message received");
+        const dataArray = new Uint8Array(viz.frequencyBinCount);
+        viz.getByteFrequencyData(dataArray);
+        if (popupPort) {
+          console.log("[INFO] Sending visualizer data");
+        popupPort.postMessage({
+          type: "visualizer-data",
+          data: Array.from(dataArray)
+        });
+      } else {
+        console.log("[ERROR] issue enviando mensaje")
+      }
+    }
+  });
+}});
 
 chrome.runtime.onMessage.addListener(async (msg) => {
   if (msg.target !== "offscreen") return;
 
   if (msg.type === "start-processing") {
+    if (medias.has(msg.tabId)) {
+      console.log("[ERROR] Tab already capturing audio");
+      return;
+    }
     const media = await navigator.mediaDevices.getUserMedia({
       audio: {
         mandatory: {
@@ -71,32 +91,16 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     analyser.connect(context.destination);
 
     chrome.runtime.sendMessage({ type: "offscreen-alive" });
-    // enviar data al popup
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    function loop() {
-      analyser.getByteFrequencyData(dataArray);
-      if (popupPort) {
-        popupPort.postMessage({
-          type: "visualizer-data",
-          data: Array.from(dataArray)
-        });
-      }
-    }
-    // const id = requestAnimationFrame(loop);
-    // loops.set(msg.tabId, id);
-    // }
-    // loop();
 
     contexts.set(msg.tabId, context);
     filtros.set(msg.tabId, {volume, low, mid, high});
     medias.set(msg.tabId, media);
-    viz.set(msg.tabId, analyser);
+    viz = analyser;
   }
   if (msg.type === "debug") {
-    const v = viz.get(msg.tabId);
-    const dataArray = new Uint8Array(v.frequencyBinCount);
+    const dataArray = new Uint8Array(viz.frequencyBinCount);
     function loop() {
-      v.getByteFrequencyData(dataArray);
+      viz.getByteFrequencyData(dataArray);
       if (popupPort) {
         popupPort.postMessage({
           type: "visualizer-data",

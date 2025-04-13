@@ -1,4 +1,6 @@
 let capturingAudio = false;
+let offscreenPort = null;
+let loops = null;
 
 function guardarEstado() {
   chrome.storage.local.set({
@@ -56,25 +58,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     // conexion P2P
     if (message.type === "offscreen-alive") {
       try {
-        const port = chrome.runtime.connect({ name: "popup-visualizer" });
+        offscreenPort = chrome.runtime.connect({ name: "popup-visualizer" });
         estado.textContent = "Conectado al offscreen";
 
-        port.onDisconnect.addListener(() => {
-        estado.textContent = "Desconectado del offscreen";
-      });
+        offscreenPort.onDisconnect.addListener(() => {
+          estado.textContent = "Desconectado del offscreen";
+        });
 
-      port.onMessage.addListener((message) => {
-        estado.textContent = "Mensajes recibidos del offscreen";
-        if (message.type === "visualizer-data") {
+        offscreenPort.onMessage.addListener((message) => {
+          estado.textContent = "Mensajes recibidos del offscreen";
+          if (message.type === "visualizer-data") {
             estado.textContent = "Me pasaron espectro";
             drawVisualizer(message.data);
-        }
-        // Aquí puedes manejar los mensajes recibidos del offscreen.
-      });
+          }
+        });
       } catch (error) {
         estado.textContent = "Error al conectar al offscreen";
         console.error("[POPUP] Error al conectar al offscreen:", error);
       }
+
+      let counter=1;
+      function loop() {
+        if (offscreenPort) {
+          counter++;
+          estado.textContent = "Enviando mensaje al offscreen, counter: " + counter;
+          offscreenPort.postMessage({
+            type: "give-me-viz",
+            target: "offscreen",
+          });
+        } else {
+          estado.textContent = "no hay puerto offscreen";
+        }
+        const id = requestAnimationFrame(loop);
+        // loops.set(tab_id, id);
+        loops = id;
+      }
+      loop();
+
     }
   });
 
