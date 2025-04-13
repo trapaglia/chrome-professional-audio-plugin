@@ -77,11 +77,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("[POPUP] Error al conectar al offscreen:", error);
       }
 
-      let counter=1;
       function loop() {
         if (offscreenPort) {
-          counter++;
-          estado.textContent = "Enviando mensaje al offscreen, counter: " + counter;
           offscreenPort.postMessage({
             type: "give-me-viz",
             target: "offscreen",
@@ -90,7 +87,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           estado.textContent = "no hay puerto offscreen";
         }
         const id = requestAnimationFrame(loop);
-        // loops.set(tab_id, id);
         loops = id;
       }
       loop();
@@ -135,6 +131,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       boton.textContent = "Detener Audio 🔇";
       capturingAudio = true;
+      function loop() {
+        if (offscreenPort) {
+          offscreenPort.postMessage({
+            type: "give-me-viz",
+            target: "offscreen",
+          });
+        } else {
+          estado.textContent = "no hay puerto offscreen";
+        }
+        const id = requestAnimationFrame(loop);
+        loops = id;
+      }
+      loop();
     } else {
       await chrome.runtime.sendMessage({
         type: "stop-processing",
@@ -143,6 +152,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       boton.textContent = "Activar Audio 🎤";
       capturingAudio = false;
+      cancelAnimationFrame(loops);
+      loops = null;
     }
 
     guardarEstado();
@@ -154,22 +165,31 @@ async function getActiveTabId() {
   return tab.id;
 }
 
-function drawVisualizer(dataArray) {
+function drawVisualizer(data) {
   const canvas = document.getElementById("visual");
   const ctx = canvas.getContext("2d");
-  const bufferLength = dataArray.length;
+  const bufferLength = data["post"].length;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#fef6f9";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const barWidth = (canvas.width / bufferLength) * 1.5;
-  let x = 0;
 
+  let x = 0;
   console.log("Dibujando visual...")
   for (let i = 0; i < bufferLength; i++) {
-    const barHeight = dataArray[i];
-    ctx.fillStyle = `rgb(${barHeight + 100}, 80, 150)`;
+    const barHeight = data["post"][i];
+    // ctx.fillStyle = `rgb(${barHeight + 100}, 80, 150)`;
+    ctx.fillStyle = `rgb(10, 80, 10)`;
+    ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+    x += barWidth + 1;
+  }
+  x = 0;
+  for (let i = 0; i < bufferLength; i++) {
+    const barHeight = data["pre"][i];
+    // ctx.fillStyle = `rgb(${barHeight + 100}, 80, 150)`;
+    ctx.fillStyle = `rgb(80, 10, 10)`;
     ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
     x += barWidth + 1;
   }

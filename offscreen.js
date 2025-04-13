@@ -3,7 +3,8 @@ let filtros = new Map();
 let medias = new Map();
 let popupPort = null;
 let loops = new Map();
-let viz = null;
+let pre_viz = null;
+let post_viz = null;
 
 // Función para asegurar que la página offscreen está lista y responder al mensaje
 async function asegurarOffscreen() {
@@ -25,18 +26,20 @@ chrome.runtime.onConnect.addListener((port) => {
     port.onMessage.addListener((msg) => {
       if (msg.type === "give-me-viz") {
         console.log("[INFO] give-me-viz message received");
-        const dataArray = new Uint8Array(viz.frequencyBinCount);
-        viz.getByteFrequencyData(dataArray);
+        const pre_bins = new Uint8Array(pre_viz.frequencyBinCount);
+        pre_viz.getByteFrequencyData(pre_bins);
+        const post_bins = new Uint8Array(post_viz.frequencyBinCount);
+        post_viz.getByteFrequencyData(post_bins);
         if (popupPort) {
           console.log("[INFO] Sending visualizer data");
-        popupPort.postMessage({
-          type: "visualizer-data",
-          data: Array.from(dataArray)
-        });
-      } else {
-        console.log("[ERROR] issue enviando mensaje")
+          popupPort.postMessage({
+            type: "visualizer-data",
+            data: { pre: Array.from(pre_bins), post: Array.from(post_bins) }
+          });
+        } else {
+          console.log("[ERROR] issue enviando mensaje")
+        }
       }
-    }
   });
 }});
 
@@ -79,38 +82,42 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     high.frequency.value = 8000;
     high.gain.value = msg.agudos;
 
-    const analyser = context.createAnalyser();
-    analyser.fftSize = 256; // resolución (más alto = más detalle)
+    // const analyser = context.createAnalyser();
+    // analyser.fftSize = 256; // resolución (más alto = más detalle)
+    // analyser.fftSize = 2048; // resolución (más alto = más detalle)
+    // analyser.maxDecibels = -25;
+    // analyser.minDecibels = -60;
+    // analyser.smoothingTimeConstant = 0.5;
+    const pre_analyser= new AnalyserNode(context, {
+      fftSize: 2048,
+      maxDecibels: -25,
+      minDecibels: -100,
+      smoothingTimeConstant: 0.4,
+    });
+
+    const post_analyser= new AnalyserNode(context, {
+      fftSize: 2048,
+      maxDecibels: -25,
+      minDecibels: -100,
+      smoothingTimeConstant: 0.4,
+    });
 
     // conectar: source → volume → low → mid → high → output
     source.connect(volume);
-    volume.connect(low);
+    volume.connect(pre_analyser);
+    pre_analyser.connect(low);
     low.connect(mid);
     mid.connect(high);
-    high.connect(analyser);
-    analyser.connect(context.destination);
+    high.connect(post_analyser);
+    post_analyser.connect(context.destination);
 
     chrome.runtime.sendMessage({ type: "offscreen-alive" });
 
     contexts.set(msg.tabId, context);
     filtros.set(msg.tabId, {volume, low, mid, high});
     medias.set(msg.tabId, media);
-    viz = analyser;
-  }
-  if (msg.type === "debug") {
-    const dataArray = new Uint8Array(viz.frequencyBinCount);
-    function loop() {
-      viz.getByteFrequencyData(dataArray);
-      if (popupPort) {
-        popupPort.postMessage({
-          type: "visualizer-data",
-          data: Array.from(dataArray)
-        });
-      }
-    }
-    loop();
-
-    console.log("[INFO] Debug message received");
+    pre_viz = pre_analyser;
+    post_viz = post_analyser;
   }
 
   if (msg.type === "ajustar-filtro") {
