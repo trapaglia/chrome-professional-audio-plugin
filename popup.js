@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('Popup loaded');
   const boton = document.getElementById("activar");
   const estado = document.getElementById("estado");
+  const debug = document.getElementById("debug");
 
   chrome.storage.local.get(['capturingAudio'], function(result) {
     capturingAudio = result.capturingAudio || false;
@@ -65,7 +66,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       port.onMessage.addListener((message) => {
         estado.textContent = "Mensajes recibidos del offscreen";
         if (message.type === "visualizer-data") {
-          estado.textContent = "Me pasaron espectro";
+            estado.textContent = "Me pasaron espectro";
+            drawVisualizer(message.data);
         }
         // Aquí puedes manejar los mensajes recibidos del offscreen.
       });
@@ -83,6 +85,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   //     port.postMessage({ action: "botonClic", data: "datos del botón" });
   //   });
   // }
+  debug.addEventListener("click", async () => {
+    console.log("Debug button clicked");
+    chrome.runtime.sendMessage({ type: "debug" , tabId: await getActiveTabId()});
+  });
 
   boton.addEventListener("click", async () => {
     const tabId = await getActiveTabId();
@@ -128,6 +134,32 @@ async function getActiveTabId() {
   return tab.id;
 }
 
+function drawVisualizer(dataArray) {
+  const canvas = document.getElementById("visual");
+  const ctx = canvas.getContext("2d");
+  const bufferLength = dataArray.length;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#fef6f9";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const barWidth = (canvas.width / bufferLength) * 1.5;
+  let x = 0;
+
+  console.log("Dibujando visual...")
+  for (let i = 0; i < bufferLength; i++) {
+    const barHeight = dataArray[i];
+    ctx.fillStyle = `rgb(${barHeight + 100}, 80, 150)`;
+    ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+    x += barWidth + 1;
+  }
+}
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === "visualizer-data" && msg.data) {
+    drawVisualizer(msg.data);
+  }
+});
 
 ["volumen", "graves", "medios", "agudos"].forEach((id) => {
   document.getElementById(id).addEventListener("input", async (e) => {

@@ -3,6 +3,7 @@ let filtros = new Map();
 let medias = new Map();
 let popupPort = null;
 let loops = new Map();
+let viz = new Map();
 
 // Función para asegurar que la página offscreen está lista y responder al mensaje
 async function asegurarOffscreen() {
@@ -80,14 +81,32 @@ chrome.runtime.onMessage.addListener(async (msg) => {
           data: Array.from(dataArray)
         });
       }
-      const id = requestAnimationFrame(loop);
-      loops.set(msg.tabId, id);
     }
-    loop();
+    // const id = requestAnimationFrame(loop);
+    // loops.set(msg.tabId, id);
+    // }
+    // loop();
 
     contexts.set(msg.tabId, context);
     filtros.set(msg.tabId, {volume, low, mid, high});
     medias.set(msg.tabId, media);
+    viz.set(msg.tabId, analyser);
+  }
+  if (msg.type === "debug") {
+    const v = viz.get(msg.tabId);
+    const dataArray = new Uint8Array(v.frequencyBinCount);
+    function loop() {
+      v.getByteFrequencyData(dataArray);
+      if (popupPort) {
+        popupPort.postMessage({
+          type: "visualizer-data",
+          data: Array.from(dataArray)
+        });
+      }
+    }
+    loop();
+
+    console.log("[INFO] Debug message received");
   }
 
   if (msg.type === "ajustar-filtro") {
