@@ -49,6 +49,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (capturingAudio) {
       boton.textContent = "Detener Audio 🔇";
+      openOffscreenPort();
+      // updateVisualizer();
     } else {
       boton.textContent = "Activar Audio 🎤";
     }
@@ -57,39 +59,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     // conexion P2P
     if (message.type === "offscreen-alive") {
-      try {
-        offscreenPort = chrome.runtime.connect({ name: "popup-visualizer" });
-        estado.textContent = "Conectado al offscreen";
+      openOffscreenPort();
 
-        offscreenPort.onDisconnect.addListener(() => {
-          estado.textContent = "Desconectado del offscreen";
-        });
-
-        offscreenPort.onMessage.addListener((message) => {
-          estado.textContent = "Mensajes recibidos del offscreen";
-          if (message.type === "visualizer-data") {
-            estado.textContent = "Me pasaron espectro";
-            drawVisualizer(message.data);
-          }
-        });
-      } catch (error) {
-        estado.textContent = "Error al conectar al offscreen";
-        console.error("[POPUP] Error al conectar al offscreen:", error);
-      }
-
-      function loop() {
-        if (offscreenPort) {
-          offscreenPort.postMessage({
-            type: "give-me-viz",
-            target: "offscreen",
-          });
-        } else {
-          estado.textContent = "no hay puerto offscreen";
-        }
-        const id = requestAnimationFrame(loop);
-        loops = id;
-      }
-      loop();
 
     }
   });
@@ -131,19 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       boton.textContent = "Detener Audio 🔇";
       capturingAudio = true;
-      function loop() {
-        if (offscreenPort) {
-          offscreenPort.postMessage({
-            type: "give-me-viz",
-            target: "offscreen",
-          });
-        } else {
-          estado.textContent = "no hay puerto offscreen";
-        }
-        const id = requestAnimationFrame(loop);
-        loops = id;
-      }
-      loop();
+      // updateVisualizer();
     } else {
       await chrome.runtime.sendMessage({
         type: "stop-processing",
@@ -181,7 +140,7 @@ function drawVisualizer(data) {
   for (let i = 0; i < bufferLength; i++) {
     const barHeight = data["post"][i];
     // ctx.fillStyle = `rgb(${barHeight + 100}, 80, 150)`;
-    ctx.fillStyle = `rgb(10, 80, 10)`;
+    ctx.fillStyle = `rgb(110, 110, 110)`;
     ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
     x += barWidth + 1;
   }
@@ -214,3 +173,42 @@ chrome.runtime.onMessage.addListener((msg) => {
     guardarEstado();
   })
 });
+
+function updateVisualizer() {
+  function loop() {
+    if (offscreenPort) {
+      offscreenPort.postMessage({
+        type: "give-me-viz",
+        target: "offscreen",
+      });
+    } else {
+      estado.textContent = "no hay puerto offscreen";
+    }
+    const id = requestAnimationFrame(loop);
+    loops = id;
+  }
+  loop();
+}
+
+function openOffscreenPort () {
+  try {
+    offscreenPort = chrome.runtime.connect({ name: "popup-visualizer" });
+    estado.textContent = "Conectado al offscreen";
+
+    offscreenPort.onDisconnect.addListener(() => {
+      estado.textContent = "Desconectado del offscreen";
+    });
+
+    offscreenPort.onMessage.addListener((message) => {
+      if (message.type === "visualizer-data") {
+        drawVisualizer(message.data);
+      } 
+      else if (message.type === "start-stream") {
+        updateVisualizer();
+      }
+    });
+  } catch (error) {
+    estado.textContent = "Error al conectar al offscreen";
+    console.error("[POPUP] Error al conectar al offscreen:", error);
+  }
+}

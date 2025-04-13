@@ -18,6 +18,8 @@ chrome.runtime.onConnect.addListener((port) => {
     popupPort = port;
     console.log("[OFFSCREEN] Conectado al popup 🥰");
 
+    port.postMessage({ type: "start-stream" });
+
     port.onDisconnect.addListener(() => {
       popupPort = null;
       console.log("[OFFSCREEN] Popup cerrado 😢");
