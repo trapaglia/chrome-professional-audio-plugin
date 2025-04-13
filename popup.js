@@ -125,33 +125,78 @@ async function getActiveTabId() {
 }
 
 function drawVisualizer(data) {
+  drawDualSpectrum(data["pre"], data["post"]);
+  // const canvas = document.getElementById("visual");
+  // const ctx = canvas.getContext("2d");
+  // const bufferLength = data["post"].length;
+
+  // ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // ctx.fillStyle = "#fef6f9";
+  // ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // const barWidth = (canvas.width / bufferLength) * 1.5;
+
+  // let x = 0;
+  // console.log("Dibujando visual...")
+  // for (let i = 0; i < bufferLength; i++) {
+  //   const barHeight = data["post"][i];
+  //   // ctx.fillStyle = `rgb(${barHeight + 100}, 80, 150)`;
+  //   ctx.fillStyle = `rgb(110, 110, 110)`;
+  //   ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+  //   x += barWidth + 1;
+  // }
+  // x = 0;
+  // for (let i = 0; i < bufferLength; i++) {
+  //   const barHeight = data["pre"][i];
+  //   // ctx.fillStyle = `rgb(${barHeight + 100}, 80, 150)`;
+  //   ctx.fillStyle = `rgb(80, 10, 10)`;
+  //   ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+  //   x += barWidth + 1;
+  // }
+}
+
+// 🎨 drawDualSpectrum.js — visualizador con fondo claro, colores vivos y glow 💖
+
+function drawDualSpectrum(preData, postData) {
   const canvas = document.getElementById("visual");
   const ctx = canvas.getContext("2d");
-  const bufferLength = data["post"].length;
+  const bufferLength = preData.length;
 
+  // 🌞 Fondo claro y limpio
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#fef6f9";
+  ctx.fillStyle = "#fefefe"; // blanco suave
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const barWidth = (canvas.width / bufferLength) * 1.5;
-
+  const barWidth = (canvas.width / bufferLength) * 0.9;
   let x = 0;
-  console.log("Dibujando visual...")
+
+  // ✨ Efecto glow
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+
+  // 💜 Pre-EQ: violeta vivo con glow
+  ctx.shadowColor = "rgba(190, 90, 255, 0.6)";
   for (let i = 0; i < bufferLength; i++) {
-    const barHeight = data["post"][i];
-    // ctx.fillStyle = `rgb(${barHeight + 100}, 80, 150)`;
-    ctx.fillStyle = `rgb(110, 110, 110)`;
+    const barHeight = preData[i];
+    ctx.fillStyle = "rgba(190, 90, 255, 0.5)";
     ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
     x += barWidth + 1;
   }
+
+  // 💚 Post-EQ: verde neón claro con glow
+  ctx.shadowColor = "rgba(50, 220, 120, 0.6)";
   x = 0;
   for (let i = 0; i < bufferLength; i++) {
-    const barHeight = data["pre"][i];
-    // ctx.fillStyle = `rgb(${barHeight + 100}, 80, 150)`;
-    ctx.fillStyle = `rgb(80, 10, 10)`;
-    ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+    const barHeight = postData[i];
+    ctx.fillStyle = "rgba(50, 220, 120, 0.6)";
+    ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
     x += barWidth + 1;
   }
+
+  // 🧽 Limpiar efectos
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = "transparent";
 }
 
 chrome.runtime.onMessage.addListener((msg) => {

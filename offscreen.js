@@ -105,9 +105,9 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     });
 
     // conectar: source → volume → low → mid → high → output
-    source.connect(volume);
-    volume.connect(pre_analyser);
-    pre_analyser.connect(low);
+    source.connect(pre_analyser);
+    pre_analyser.connect(volume);
+    volume.connect(low);
     low.connect(mid);
     mid.connect(high);
     high.connect(post_analyser);
