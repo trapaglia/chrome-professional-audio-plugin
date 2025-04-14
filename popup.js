@@ -66,7 +66,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     // conexion P2P
     if (message.type === "offscreen-alive") {
-      openOffscreenPort();
+      if (!offscreenPort) {
+        await openOffscreenPort();
+      }
     }
   });
 
@@ -107,8 +109,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (offscreenPort) {
         offscreenPort.postMessage({ type: "start-stream", tabId });
       } else {
-        console.assert(false, "Algo salio mal al intentar capturar el audio");
-        alert("[popup] No se puede capturar el audio en este momento. Intenta recargar la página");
+        await openOffscreenPort();
+        console.log("[WARNING] Opened offscreen port because it was closed");
       }
     } else {
       estado.textContent = "Deteniendo audio..." + debug_counter++;
@@ -217,6 +219,8 @@ function updateVisualizer() {
         target: "offscreen",
       });
     } else {
+      console.assert(false, "[popup] No hay puerto offscreen");
+      alert("[popup] No hay puerto offscreen");
       estado.textContent = "no hay puerto offscreen";
     }
     const id = requestAnimationFrame(loop);
