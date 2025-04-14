@@ -4,6 +4,7 @@ let loops = null;
 let boton = null;
 const filters = ["sub", "bass", "lowMid", "mid", "highMid", "high", "air"];
 const staticFiltering = false;
+let debug_counter = 1;
 
 // 🧠 Guardar y restaurar estado de los 8 sliders + estado de audio
 
@@ -65,8 +66,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // conexion P2P
     if (message.type === "offscreen-alive") {
       openOffscreenPort();
-
-
     }
   });
 
@@ -105,6 +104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       capturingAudio = true;
       // updateVisualizer();
     } else {
+      estado.textContent = "Deteniendo audio..." + debug_counter++;
       await chrome.runtime.sendMessage({
         type: "stop-processing",
         target: "offscreen",

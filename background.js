@@ -9,8 +9,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   // if (message.target !== "offscreen") return;
   switch (message.type) {
     case "ajustar-filtro":
-      await createOffscreenDocument();
-      chrome.runtime.sendMessage({ ...message, target: "offscreen" });
+      // await createOffscreenDocument();
+      // chrome.runtime.sendMessage({ ...message, target: "offscreen" });
       console.log("[INFO] filtro ajustado");
       break;
     case "start-processing":
@@ -19,8 +19,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       console.log("[INFO] inicio de procesamiento");
       break;
     case "stop-processing":
-      await createOffscreenDocument();
-      chrome.runtime.sendMessage({ ...message, target: "offscreen" });
+      // await createOffscreenDocument();
+      // chrome.runtime.sendMessage({ ...message, target: "offscreen" });
       console.log("[INFO] fin de procesamiento");
       break;
     case "offscreen-alive":

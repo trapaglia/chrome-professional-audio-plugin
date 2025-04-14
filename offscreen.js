@@ -19,15 +19,10 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       return;
     }
     const context = contexts.get(msg.tabId);
-    if (!medias.has(msg.tabId)) {
-      console.error("MediaStream no inicializado");
-      return;
-    }
     if (!sources.has(msg.tabId)) {
       console.error("MediaStreamSource no inicializado");
       return;
     }
-
     const source = sources.get(msg.tabId);
 
     let filtro = filtrosDinamicos.get(msg.filtroId);
@@ -69,13 +64,11 @@ chrome.runtime.onConnect.addListener((port) => {
 
     port.onMessage.addListener((msg) => {
       if (msg.type === "give-me-viz") {
-        console.log("[INFO] give-me-viz message received");
         const pre_bins = new Uint8Array(pre_viz.frequencyBinCount);
         pre_viz.getByteFrequencyData(pre_bins);
         const post_bins = new Uint8Array(post_viz.frequencyBinCount);
         post_viz.getByteFrequencyData(post_bins);
         if (popupPort) {
-          console.log("[INFO] Sending visualizer data");
           popupPort.postMessage({
             type: "visualizer-data",
             data: { pre: Array.from(pre_bins), post: Array.from(post_bins) }
@@ -125,7 +118,11 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       smoothingTimeConstant: 0.4,
     });
     source.connect(pre_viz);
+    pre_viz.connect(post_viz);
     post_viz.connect(context.destination);
+    console.log("[INFO] AudioContext inicializado")
+    console.log("[INFO] MediaStreamSource inicializado")
+    // console.log("source:")
 
     if (staticFiltering)
       setupEQ(context, msg);
@@ -166,7 +163,8 @@ chrome.runtime.onMessage.addListener(async (msg) => {
   }
   if (msg.type === "stop-processing") {
     if (contexts.has(msg.tabId)) {
-      const context = contexts.get(msg.tabId);
+      let context = contexts.get(msg.tabId);
+      console.log("Closing AudioContext");
       context.close(); // cierra el AudioContext
 
       if (staticFilters.has(msg.tabId)) {
@@ -251,7 +249,6 @@ function setupEQ(context, msg) {
   filters.get("high").connect(filters.get("air"));
   filters.get("air").connect(post_viz);
 
-  contexts.set(msg.tabId, context);
 }
 
 function reconectarCadena(tabId) {
