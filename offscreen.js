@@ -59,7 +59,8 @@ chrome.runtime.onConnect.addListener((port) => {
     popupPort = port;
     console.log("[OFFSCREEN] Conectado al popup 🥰");
 
-    port.postMessage({ type: "start-stream" });
+
+    // port.postMessage({ type: "start-stream" });
 
     port.onDisconnect.addListener(() => {
       popupPort = null;
@@ -67,24 +68,43 @@ chrome.runtime.onConnect.addListener((port) => {
     });
 
     port.onMessage.addListener((msg) => {
-      if (msg.type === "give-me-viz") {
-        const pre_bins = new Uint8Array(pre_viz.frequencyBinCount);
-        pre_viz.getByteFrequencyData(pre_bins);
-        const post_bins = new Uint8Array(post_viz.frequencyBinCount);
-        post_viz.getByteFrequencyData(post_bins);
-        if (popupPort) {
-          popupPort.postMessage({
-            type: "visualizer-data",
-            data: { pre: Array.from(pre_bins), post: Array.from(post_bins) }
-          });
-        } else {
-          console.log("[ERROR] issue enviando mensaje")
-        }
+      switch (msg.type) {
+        case "start-stream":
+          if (medias.has(msg.tabId)) {
+            port.postMessage({ type: "start-stream" });
+          }
+          break;
+        case "give-me-viz":
+          // DEBUG HERE TODO FIXME
+          // Error in event handler: TypeError: Cannot read properties of null (reading 'frequencyBinCount')
+          if (!pre_viz || !post_viz) {
+            console.log("[ERROR] pre_viz o post_viz no inicializados");
+            alert("[offscreen] No se puede capturar el audio en este momento. Intenta recargar la página");
+            return;
+          }
+          const pre_bins = new Uint8Array(pre_viz.frequencyBinCount);
+          // DEBUG HERE TODO FIXME
+          pre_viz.getByteFrequencyData(pre_bins);
+          const post_bins = new Uint8Array(post_viz.frequencyBinCount);
+          post_viz.getByteFrequencyData(post_bins);
+          if (popupPort) {
+            popupPort.postMessage({
+              type: "visualizer-data",
+              data: { pre: Array.from(pre_bins), post: Array.from(post_bins) }
+            });
+          } else {
+            console.log("[ERROR] issue enviando mensaje")
+          }
+          break;
+        default:
+          break;
       }
-  });
-}});
+    });
+  }
+});
 
 chrome.runtime.onMessage.addListener(async (msg) => {
+  if (msg.target !== "offscreen") return;
   if (msg.target !== "offscreen") return;
 
   if (msg.type === "offscreen-wakeup") {
@@ -135,6 +155,9 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     if (staticFiltering)
       setupEQ(context, msg);
 
+    if (popupPort) {
+      popupPort.postMessage({ type: "start-stream" });
+    }
   }
 
   if (msg.type === "ajustar-filtro") {
@@ -171,8 +194,12 @@ chrome.runtime.onMessage.addListener(async (msg) => {
   if (msg.type === "stop-processing") {
     if (contexts.has(msg.tabId)) {
       let context = contexts.get(msg.tabId);
-      console.log("Closing AudioContext");
-      context.close(); // cierra el AudioContext
+      console.log("[INFO] Closing AudioContext");
+      if (context && context.state === 'running') {
+        context.close(); // cierra el AudioContext
+      } else {
+        console.log("[Info] AudioContext already closed !");
+      }
 
       if (staticFilters.has(msg.tabId)) {
         const f = staticFilters.get(msg.tabId);

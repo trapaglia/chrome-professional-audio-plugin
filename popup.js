@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log("entre isActive")
       if (!tab.url.startsWith("http")) {
         console.log("ALERT")
-        alert("No se puede capturar esta pestaña. Abrí una página web con audio 😊");
+        alert("[popup] No se puede capturar esta pestaña. Abrí una página web con audio 😊");
         return;
       }
       const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId });
@@ -104,7 +104,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       boton.textContent = "Detener Audio 🔇";
       capturingAudio = true;
-      // updateVisualizer();
+      if (offscreenPort) {
+        offscreenPort.postMessage({ type: "start-stream", tabId });
+      } else {
+        console.assert(false, "Algo salio mal al intentar capturar el audio");
+        alert("[popup] No se puede capturar el audio en este momento. Intenta recargar la página");
+      }
     } else {
       estado.textContent = "Deteniendo audio..." + debug_counter++;
       await chrome.runtime.sendMessage({
@@ -220,10 +225,12 @@ function updateVisualizer() {
   loop();
 }
 
-function openOffscreenPort () {
+async function openOffscreenPort () {
   try {
-    offscreenPort = chrome.runtime.connect({ name: "popup-visualizer" });
+    const tabId = await getActiveTabId();
+    offscreenPort = chrome.runtime.connect({ name: "popup-visualizer"});
     estado.textContent = "Conectado al offscreen";
+    offscreenPort.postMessage({ type: "start-stream", tabId });
 
     offscreenPort.onDisconnect.addListener(() => {
       estado.textContent = "Desconectado del offscreen";
