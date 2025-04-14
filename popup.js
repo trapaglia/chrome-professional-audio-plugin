@@ -45,10 +45,11 @@ function sendMessagePromise(message) {
 
 // Wait for zhe DOM to load
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('Popup loaded');
   boton = document.getElementById("activar");
   const estado = document.getElementById("estado");
   const debug = document.getElementById("debug");
+
+  chrome.runtime.sendMessage({ type: "offscreen-wakeup", target: "background" });
 
   chrome.storage.local.get(['capturingAudio'], function(result) {
     capturingAudio = result.capturingAudio || false;
@@ -95,6 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       await chrome.runtime.sendMessage({
         type: "start-processing",
+        target: "offscreen",
         tabId,
         streamId,
         level: parseFloat(document.getElementById("volumen").value),
@@ -181,17 +183,6 @@ function drawVisualizer(data) {
 
 }
 
-/*
-Nombre	Tipo	Frecuencia	Uso
-Subgraves	lowshelf	60 Hz	Boom profundo, cine
-Bajos bajos	peaking	160 Hz	Bassline
-Bajos medios	peaking	400 Hz	Calor del cuerpo
-Medios	peaking	1000 Hz	Voces, teclas
-Medios altos	peaking	2500 Hz	Guitarras, definición
-Altos	peaking	6000 Hz	Brillantez sin ser filosa
-Presencia	highshelf	10000 Hz	Aire, hi-hats, texturas
-*/
-
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "visualizer-data" && msg.data) {
     drawVisualizer(msg.data);
@@ -203,6 +194,7 @@ filters.forEach((id) => {
     const tabId = await getActiveTabId();
     chrome.runtime.sendMessage({
       type: "ajustar-filtro",
+      target: "offscreen",
       tabId,
       banda: id,
       valor: parseFloat(e.target.value),

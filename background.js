@@ -6,33 +6,11 @@ chrome.runtime.onStartup.addListener(function() {
 
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  // if (message.target !== "offscreen") return;
+  if (message.target !== "background") return;
   switch (message.type) {
-    case "ajustar-filtro":
-      // await createOffscreenDocument();
-      // chrome.runtime.sendMessage({ ...message, target: "offscreen" });
-      console.log("[INFO] filtro ajustado");
-      break;
-    case "start-processing":
-      await createOffscreenDocument();
-      chrome.runtime.sendMessage({ ...message, target: "offscreen" });
-      console.log("[INFO] inicio de procesamiento");
-      break;
-    case "stop-processing":
-      // await createOffscreenDocument();
-      // chrome.runtime.sendMessage({ ...message, target: "offscreen" });
-      console.log("[INFO] fin de procesamiento");
-      break;
-    case "offscreen-alive":
-      console.log("[INFO] offscreen-alive");
-      break;
-    case "debug":
-      console.log("[INFO] debug");
-      chrome.runtime.sendMessage({ ...message, target: "offscreen" });
-      break;
-    case "give-me-viz":
-      // await createOffscreenDocument();
-      // chrome.runtime.sendMessage({ ...message, target: "offscreen" });
+    case "offscreen-wakeup":
+      if (await createOffscreenDocument())
+        chrome.runtime.sendMessage({ type: "offscreen-wakeup", target: "offscreen" });
       break;
     default:
       // console.log("[ERROR] message no identificado");
@@ -46,6 +24,7 @@ async function createOffscreenDocument(){
     // OFFSCREEN document
     if (await chrome.offscreen.hasDocument()) {
       console.log("Offscreen document already exists");
+      return false;
     }
     else{
       console.log("Creating offscreen document");
@@ -54,5 +33,6 @@ async function createOffscreenDocument(){
         reasons: ['USER_MEDIA'],
         justification: 'Adjust tab audio'
       });
+      return true;
     }
 }

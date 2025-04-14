@@ -13,40 +13,44 @@ const staticFiltering = false;
 // 🎧 offscreen.js — gestión de filtros dinámicos de ecualización 🎛️
 
 chrome.runtime.onMessage.addListener(async (msg) => {
-  if (msg.type === "actualizar-filtro-dinamico") {
-    if (!contexts.has(msg.tabId)) {
-      console.error("AudioContext no inicializado");
-      return;
-    }
-    const context = contexts.get(msg.tabId);
-    if (!sources.has(msg.tabId)) {
-      console.error("MediaStreamSource no inicializado");
-      return;
-    }
-    const source = sources.get(msg.tabId);
+  let filtro = null;
+  switch (msg.type) {
+    case "actualizar-filtro-dinamico":
+      if (!contexts.has(msg.tabId)) {
+        console.error("AudioContext no inicializado");
+        return;
+      }
+      const context = contexts.get(msg.tabId);
+      if (!sources.has(msg.tabId)) {
+        console.error("MediaStreamSource no inicializado");
+        return;
+      }
+      const source = sources.get(msg.tabId);
 
-    let filtro = filtrosDinamicos.get(msg.filtroId);
-    if (!filtro) {
-      filtro = context.createBiquadFilter();
-      filtro.type = "peaking";
-      source.connect(filtro);
-      filtro.connect(context.destination);
-      filtrosDinamicos.set(msg.filtroId, filtro);
-    }
+      filtro = filtrosDinamicos.get(msg.filtroId);
+      if (!filtro) {
+        filtro = context.createBiquadFilter();
+        filtro.type = "peaking";
+        source.connect(filtro);
+        filtro.connect(context.destination);
+        filtrosDinamicos.set(msg.filtroId, filtro);
+      }
 
-    filtro.frequency.value = msg.freq;
-    filtro.Q.value = msg.q;
-    filtro.gain.value = msg.gain;
-    reconectarCadena(msg.tabId);
-  }
-
-  if (msg.type === "eliminar-filtro-dinamico") {
-    const filtro = filtrosDinamicos.get(msg.filtroId);
-    if (filtro) {
-      filtro.disconnect();
-      filtrosDinamicos.delete(msg.filtroId);
-    }
-    reconectarCadena(msg.tabId);
+      filtro.frequency.value = msg.freq;
+      filtro.Q.value = msg.q;
+      filtro.gain.value = msg.gain;
+      reconectarCadena(msg.tabId);
+      break;
+    case "eliminar-filtro-dinamico":
+      filtro = filtrosDinamicos.get(msg.filtroId);
+      if (filtro) {
+        filtro.disconnect();
+        filtrosDinamicos.delete(msg.filtroId);
+      }
+      reconectarCadena(msg.tabId);
+      break;
+    default:
+      break;
   }
 });
 
@@ -83,6 +87,10 @@ chrome.runtime.onConnect.addListener((port) => {
 chrome.runtime.onMessage.addListener(async (msg) => {
   if (msg.target !== "offscreen") return;
 
+  if (msg.type === "offscreen-wakeup") {
+    chrome.runtime.sendMessage({ type: "offscreen-alive" });
+    return;
+  }
   if (msg.type === "start-processing") {
     if (medias.has(msg.tabId)) {
       console.log("[ERROR] Tab already capturing audio");
@@ -126,7 +134,6 @@ chrome.runtime.onMessage.addListener(async (msg) => {
 
     if (staticFiltering)
       setupEQ(context, msg);
-    chrome.runtime.sendMessage({ type: "offscreen-alive" });
 
   }
 
