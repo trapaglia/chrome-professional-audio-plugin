@@ -1,5 +1,14 @@
 let contexts = new Map();
-let filtros = new Map();
+let filtros = {
+  sub: null,     // lowshelf 60Hz
+  bass: null,    // peaking 160Hz
+  lowMid: null,  // peaking 400Hz
+  mid: null,     // peaking 1000Hz
+  highMid: null, // peaking 2500Hz
+  high: null,    // peaking 6000Hz
+  air: null      // highshelf 10000Hz
+};
+
 let medias = new Map();
 let popupPort = null;
 let loops = new Map();
@@ -65,79 +74,40 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     const context = new AudioContext();
     const source = context.createMediaStreamSource(media);
 
-    const volume = context.createGain();
-    volume.gain.value = msg.level;
-    
-    const low = context.createBiquadFilter();
-    low.type = "lowshelf";
-    low.frequency.value = 60;
-    low.gain.value = msg.graves;
-
-    const mid = context.createBiquadFilter();
-    mid.type = "peaking";
-    mid.frequency.value = 1000;
-    mid.Q.value = 1;
-    mid.gain.value = msg.medios;
-
-    const high = context.createBiquadFilter();
-    high.type = "highshelf";
-    high.frequency.value = 8000;
-    high.gain.value = msg.agudos;
-
-    // const analyser = context.createAnalyser();
-    // analyser.fftSize = 256; // resolución (más alto = más detalle)
-    // analyser.fftSize = 2048; // resolución (más alto = más detalle)
-    // analyser.maxDecibels = -25;
-    // analyser.minDecibels = -60;
-    // analyser.smoothingTimeConstant = 0.5;
-    const pre_analyser= new AnalyserNode(context, {
-      fftSize: 2048,
-      maxDecibels: -25,
-      minDecibels: -100,
-      smoothingTimeConstant: 0.4,
-    });
-
-    const post_analyser= new AnalyserNode(context, {
-      fftSize: 2048,
-      maxDecibels: -25,
-      minDecibels: -100,
-      smoothingTimeConstant: 0.4,
-    });
-
-    // conectar: source → volume → low → mid → high → output
-    source.connect(pre_analyser);
-    pre_analyser.connect(volume);
-    volume.connect(low);
-    low.connect(mid);
-    mid.connect(high);
-    high.connect(post_analyser);
-    post_analyser.connect(context.destination);
-
+    setupEQ(context, source, msg);
+    medias.set(msg.tabId, media);
     chrome.runtime.sendMessage({ type: "offscreen-alive" });
 
-    contexts.set(msg.tabId, context);
-    filtros.set(msg.tabId, {volume, low, mid, high});
-    medias.set(msg.tabId, media);
-    pre_viz = pre_analyser;
-    post_viz = post_analyser;
   }
 
   if (msg.type === "ajustar-filtro") {
-    const f = filtros.get(msg.tabId);
+    const f = filtros;
     if (!f) return;
 
     switch (msg.banda) {
       case "volumen":
         f.volume.gain.value = msg.valor;
         break;
-      case "graves":
-        f.low.gain.value = msg.valor;
+      case "sub":
+        f.sub.gain.value = msg.valor;
         break;
-      case "medios":
+      case "bass":
+        f.bass.gain.value = msg.valor;
+        break;
+      case "lowMid":
+        f.lowMid.gain.value = msg.valor;
+        break;
+      case "mid":
         f.mid.gain.value = msg.valor;
         break;
-      case "agudos":
+      case "highMid":
+        f.highMid.gain.value = msg.valor;
+        break;
+      case "high":
         f.high.gain.value = msg.valor;
+        break;
+      case "air":
+        f.air.gain.value = msg.valor;
         break;
     }
   }
@@ -147,13 +117,15 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       ctx.close(); // cierra el AudioContext
       contexts.delete(msg.tabId);
 
-      const f = filtros.get(msg.tabId);
+      const f = filtros;
       if (f) {
-        f.volume.disconnect();
-        f.low.disconnect();
+        f.sub.disconnect();
+        f.bass.disconnect();
+        f.lowMid.disconnect();
         f.mid.disconnect();
+        f.highMid.disconnect();
         f.high.disconnect();
-        filtros.delete(msg.tabId);
+        f.air.disconnect();
       }
 
       const media = medias.get(msg.tabId);
@@ -165,3 +137,77 @@ chrome.runtime.onMessage.addListener(async (msg) => {
   }
 
 });
+
+function setupEQ(context, source, msg) {
+  const volume = context.createGain();
+  volume.gain.value = msg.level;
+
+  filtros.sub = context.createBiquadFilter();
+  filtros.sub.type = "lowshelf";
+  filtros.sub.frequency.value = 60;
+  filtros.sub.gain.value = msg.sub;
+
+  filtros.bass = context.createBiquadFilter();
+  filtros.bass.type = "peaking";
+  filtros.bass.frequency.value = 160;
+  filtros.bass.Q.value = 1;
+  filtros.bass.gain.value = msg.bass;
+
+  filtros.lowMid = context.createBiquadFilter();
+  filtros.lowMid.type = "peaking";
+  filtros.lowMid.frequency.value = 400;
+  filtros.lowMid.Q.value = 1;
+  filtros.lowMid.gain.value = msg.lowMid;
+
+  filtros.mid = context.createBiquadFilter();
+  filtros.mid.type = "peaking";
+  filtros.mid.frequency.value = 1000;
+  filtros.mid.Q.value = 1;
+  filtros.mid.gain.value = msg.mid;
+
+  filtros.highMid = context.createBiquadFilter();
+  filtros.highMid.type = "peaking";
+  filtros.highMid.frequency.value = 2500;
+  filtros.highMid.Q.value = 1;
+  filtros.highMid.gain.value = msg.highMid;
+
+  filtros.high = context.createBiquadFilter();
+  filtros.high.type = "peaking";
+  filtros.high.frequency.value = 6000;
+  filtros.high.Q.value = 1;
+  filtros.high.gain.value = msg.high;
+
+  filtros.air = context.createBiquadFilter();
+  filtros.air.type = "highshelf";
+  filtros.air.frequency.value = 10000;
+  filtros.air.gain.value = msg.air;
+
+
+  pre_viz = new AnalyserNode(context, {
+    fftSize: 2048,
+    maxDecibels: -25,
+    minDecibels: -100,
+    smoothingTimeConstant: 0.4,
+  });
+
+  post_viz= new AnalyserNode(context, {
+    fftSize: 2048,
+    maxDecibels: -25,
+    minDecibels: -100,
+    smoothingTimeConstant: 0.4,
+  });
+
+  // 🔗 Conectar filtros en cadena
+  source.connect(pre_viz);
+  pre_viz.connect(filtros.sub);
+  filtros.sub.connect(filtros.bass);
+  filtros.bass.connect(filtros.lowMid);
+  filtros.lowMid.connect(filtros.mid);
+  filtros.mid.connect(filtros.highMid);
+  filtros.highMid.connect(filtros.high);
+  filtros.high.connect(filtros.air);
+  filtros.air.connect(post_viz);
+  post_viz.connect(context.destination);
+
+  contexts.set(msg.tabId, context);
+}

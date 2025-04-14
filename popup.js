@@ -1,25 +1,29 @@
 let capturingAudio = false;
 let offscreenPort = null;
 let loops = null;
+let boton = null;
+const filters = ["sub", "bass", "lowMid", "mid", "highMid", "high", "air"];
+
+// 🧠 Guardar y restaurar estado de los 8 sliders + estado de audio
 
 function guardarEstado() {
-  chrome.storage.local.set({
-    volumen: parseFloat(document.getElementById("volumen").value),
-    graves: parseFloat(document.getElementById("graves").value),
-    medios: parseFloat(document.getElementById("medios").value),
-    agudos: parseFloat(document.getElementById("agudos").value),
-    capturingAudio: capturingAudio
+  const keys = ["volumen", ...filters];
+  const estado = { capturingAudio: capturingAudio };
+  keys.forEach((key) => {
+    estado[key] = parseFloat(document.getElementById(key)?.value);
   });
+  chrome.storage.local.set(estado);
 }
 
-chrome.storage.local.get(["volumen", "graves", "medios", "agudos", "activo"], (data) => {
-  if (data.volumen !== undefined) document.getElementById("volumen").value = data.volumen;
-  if (data.graves !== undefined) document.getElementById("graves").value = data.graves;
-  if (data.medios !== undefined) document.getElementById("medios").value = data.medios;
-  if (data.agudos !== undefined) document.getElementById("agudos").value = data.agudos;
+chrome.storage.local.get(["volumen", ...filters, "capturingAudio"], (data) => {
+  Object.entries(data).forEach(([key, value]) => {
+    const el = document.getElementById(key);
+    if (el) el.value = value;
+  });
 
   if (data.capturingAudio) {
     capturingAudio = true;
+    if (boton==null) boton = document.getElementById("activar");
     boton.textContent = "Detener Audio 🔇";
   }
 });
@@ -40,7 +44,7 @@ function sendMessagePromise(message) {
 // Wait for zhe DOM to load
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Popup loaded');
-  const boton = document.getElementById("activar");
+  boton = document.getElementById("activar");
   const estado = document.getElementById("estado");
   const debug = document.getElementById("debug");
 
@@ -65,13 +69,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Ejemplo: Enviar un mensaje al offscreen cuando se hace clic en un botón.
-  // const miBoton = document.getElementById('miBoton');
-  // if (miBoton) {
-  //   miBoton.addEventListener('click', () => {
-  //     port.postMessage({ action: "botonClic", data: "datos del botón" });
-  //   });
-  // }
   debug.addEventListener("click", async () => {
     console.log("Debug button clicked");
     chrome.runtime.sendMessage({ type: "debug" , tabId: await getActiveTabId()});
@@ -90,15 +87,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId });
+      const eqValores = {}
+      filters.forEach((filter) => {
+        eqValores[filter] = parseFloat(document.getElementById(filter).value);
+      });
       await chrome.runtime.sendMessage({
         type: "start-processing",
         // target: "offscreen",
         tabId,
         streamId,
         level: parseFloat(document.getElementById("volumen").value),
-        graves: parseFloat(document.getElementById("graves").value),
-        medios: parseFloat(document.getElementById("medios").value),
-        agudos: parseFloat(document.getElementById("agudos").value),
+        ...eqValores,
       });
       boton.textContent = "Detener Audio 🔇";
       capturingAudio = true;
@@ -166,7 +165,30 @@ function drawVisualizer(data) {
   // 🧽 Limpiar efectos
   ctx.shadowBlur = 0;
   ctx.shadowColor = "transparent";
+
+  // 🔀 Lneas verticales en 60, 1000, 8000 Hz
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "#666";
+  ctx.beginPath();
+  [60, 1000, 8000].forEach((freq) => {
+    const x = canvas.width * freq / 10000;
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+  });
+  ctx.stroke();
+
 }
+
+/*
+Nombre	Tipo	Frecuencia	Uso
+Subgraves	lowshelf	60 Hz	Boom profundo, cine
+Bajos bajos	peaking	160 Hz	Bassline
+Bajos medios	peaking	400 Hz	Calor del cuerpo
+Medios	peaking	1000 Hz	Voces, teclas
+Medios altos	peaking	2500 Hz	Guitarras, definición
+Altos	peaking	6000 Hz	Brillantez sin ser filosa
+Presencia	highshelf	10000 Hz	Aire, hi-hats, texturas
+*/
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "visualizer-data" && msg.data) {
@@ -174,19 +196,19 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 });
 
-["volumen", "graves", "medios", "agudos"].forEach((id) => {
-  document.getElementById(id).addEventListener("input", async (e) => {
+filters.forEach((id) => {
+  document.getElementById(id)?.addEventListener("input", async (e) => {
     const tabId = await getActiveTabId();
     chrome.runtime.sendMessage({
       type: "ajustar-filtro",
-      // target: "offscreen",
       tabId,
       banda: id,
       valor: parseFloat(e.target.value),
     });
     guardarEstado();
-  })
+  });
 });
+
 
 function updateVisualizer() {
   function loop() {
