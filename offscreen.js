@@ -1,26 +1,59 @@
-let contexts = new Map();
-let filtros = {
-  sub: null,     // lowshelf 60Hz
-  bass: null,    // peaking 160Hz
-  lowMid: null,  // peaking 400Hz
-  mid: null,     // peaking 1000Hz
-  highMid: null, // peaking 2500Hz
-  high: null,    // peaking 6000Hz
-  air: null      // highshelf 10000Hz
-};
-
-let medias = new Map();
+const filtrosDinamicos = new Map();
+const contexts = new Map();
+const medias = new Map();
+const sources = new Map();
 let popupPort = null;
 let loops = new Map();
 let pre_viz = null;
 let post_viz = null;
+const staticFilters = new Map();
+// const bandas_filtros = ["sub", "bass", "lowMid", "mid", "highMid", "high", "air"];
+const staticFiltering = false;
 
-// Función para asegurar que la página offscreen está lista y responder al mensaje
-async function asegurarOffscreen() {
-  console.log("[OFFSCREEN] Página offscreen lista y funcionando 🚀");
-  // Simplemente devolvemos true para indicar que la página offscreen está lista
-  return true;
-}
+// 🎧 offscreen.js — gestión de filtros dinámicos de ecualización 🎛️
+
+chrome.runtime.onMessage.addListener(async (msg) => {
+  if (msg.type === "actualizar-filtro-dinamico") {
+    if (!contexts.has(msg.tabId)) {
+      console.error("AudioContext no inicializado");
+      return;
+    }
+    const context = contexts.get(msg.tabId);
+    if (!medias.has(msg.tabId)) {
+      console.error("MediaStream no inicializado");
+      return;
+    }
+    if (!sources.has(msg.tabId)) {
+      console.error("MediaStreamSource no inicializado");
+      return;
+    }
+
+    const source = sources.get(msg.tabId);
+
+    let filtro = filtrosDinamicos.get(msg.filtroId);
+    if (!filtro) {
+      filtro = context.createBiquadFilter();
+      filtro.type = "peaking";
+      source.connect(filtro);
+      filtro.connect(context.destination);
+      filtrosDinamicos.set(msg.filtroId, filtro);
+    }
+
+    filtro.frequency.value = msg.freq;
+    filtro.Q.value = msg.q;
+    filtro.gain.value = msg.gain;
+    reconectarCadena(msg.tabId);
+  }
+
+  if (msg.type === "eliminar-filtro-dinamico") {
+    const filtro = filtrosDinamicos.get(msg.filtroId);
+    if (filtro) {
+      filtro.disconnect();
+      filtrosDinamicos.delete(msg.filtroId);
+    }
+    reconectarCadena(msg.tabId);
+  }
+});
 
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === "popup-visualizer") {
@@ -70,18 +103,38 @@ chrome.runtime.onMessage.addListener(async (msg) => {
         },
       },
     });
+    medias.set(msg.tabId, media);
 
     const context = new AudioContext();
+    contexts.set(msg.tabId, context);
     const source = context.createMediaStreamSource(media);
+    sources.set(msg.tabId, source);
 
-    setupEQ(context, source, msg);
-    medias.set(msg.tabId, media);
+
+    pre_viz = new AnalyserNode(context, {
+      fftSize: 2048,
+      maxDecibels: -25,
+      minDecibels: -100,
+      smoothingTimeConstant: 0.4,
+    });
+
+    post_viz= new AnalyserNode(context, {
+      fftSize: 2048,
+      maxDecibels: -25,
+      minDecibels: -100,
+      smoothingTimeConstant: 0.4,
+    });
+    source.connect(pre_viz);
+    post_viz.connect(context.destination);
+
+    if (staticFiltering)
+      setupEQ(context, msg);
     chrome.runtime.sendMessage({ type: "offscreen-alive" });
 
   }
 
   if (msg.type === "ajustar-filtro") {
-    const f = filtros;
+    const f = staticFilters.get(msg.tabId);
     if (!f) return;
 
     switch (msg.banda) {
@@ -112,20 +165,22 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     }
   }
   if (msg.type === "stop-processing") {
-    const ctx = contexts.get(msg.tabId);
-    if (ctx) {
-      ctx.close(); // cierra el AudioContext
-      contexts.delete(msg.tabId);
+    if (contexts.has(msg.tabId)) {
+      const context = contexts.get(msg.tabId);
+      context.close(); // cierra el AudioContext
 
-      const f = filtros;
-      if (f) {
-        f.sub.disconnect();
-        f.bass.disconnect();
-        f.lowMid.disconnect();
-        f.mid.disconnect();
-        f.highMid.disconnect();
-        f.high.disconnect();
-        f.air.disconnect();
+      if (staticFilters.has(msg.tabId)) {
+        const f = staticFilters.get(msg.tabId);
+        f.forEach((filtro) => {
+          filtro.disconnect();
+        });
+      }
+
+      if (filtrosDinamicos.has(msg.tabId)) {
+        const f = filtrosDinamicos.get(msg.tabId);
+        f.forEach((filtro) => {
+          filtro.disconnect();
+        });
       }
 
       const media = medias.get(msg.tabId);
@@ -138,76 +193,78 @@ chrome.runtime.onMessage.addListener(async (msg) => {
 
 });
 
-function setupEQ(context, source, msg) {
+function setupEQ(context, msg) {
   const volume = context.createGain();
   volume.gain.value = msg.level;
 
-  filtros.sub = context.createBiquadFilter();
-  filtros.sub.type = "lowshelf";
-  filtros.sub.frequency.value = 60;
-  filtros.sub.gain.value = msg.sub;
+  staticFilters.set(msg.tabId, new Map());
+  const filters = staticFilters.get(msg.tabId);
 
-  filtros.bass = context.createBiquadFilter();
-  filtros.bass.type = "peaking";
-  filtros.bass.frequency.value = 160;
-  filtros.bass.Q.value = 1;
-  filtros.bass.gain.value = msg.bass;
+  filters.set("sub", context.createBiquadFilter());
+  filters.get("sub").type = "lowshelf";
+  filters.get("sub").frequency.value = 60;
+  filters.get("sub").gain.value = msg.sub;
 
-  filtros.lowMid = context.createBiquadFilter();
-  filtros.lowMid.type = "peaking";
-  filtros.lowMid.frequency.value = 400;
-  filtros.lowMid.Q.value = 1;
-  filtros.lowMid.gain.value = msg.lowMid;
+  filters.set("bass", context.createBiquadFilter());
+  filters.get("bass").type = "peaking";
+  filters.get("bass").frequency.value = 160;
+  filters.get("bass").Q.value = 1;
+  filters.get("bass").gain.value = msg.bass;
 
-  filtros.mid = context.createBiquadFilter();
-  filtros.mid.type = "peaking";
-  filtros.mid.frequency.value = 1000;
-  filtros.mid.Q.value = 1;
-  filtros.mid.gain.value = msg.mid;
+  filters.set("lowMid", context.createBiquadFilter());
+  filters.get("lowMid").type = "peaking";
+  filters.get("lowMid").frequency.value = 400;
+  filters.get("lowMid").Q.value = 1;
+  filters.get("lowMid").gain.value = msg.lowMid;
 
-  filtros.highMid = context.createBiquadFilter();
-  filtros.highMid.type = "peaking";
-  filtros.highMid.frequency.value = 2500;
-  filtros.highMid.Q.value = 1;
-  filtros.highMid.gain.value = msg.highMid;
+  filters.set("mid", context.createBiquadFilter());
+  filters.get("mid").type = "peaking";
+  filters.get("mid").frequency.value = 1000;
+  filters.get("mid").Q.value = 1;
+  filters.get("mid").gain.value = msg.mid;
 
-  filtros.high = context.createBiquadFilter();
-  filtros.high.type = "peaking";
-  filtros.high.frequency.value = 6000;
-  filtros.high.Q.value = 1;
-  filtros.high.gain.value = msg.high;
+  filters.set("highMid", context.createBiquadFilter());
+  filters.get("highMid").type = "peaking";
+  filters.get("highMid").frequency.value = 2500;
+  filters.get("highMid").Q.value = 1;
+  filters.get("highMid").gain.value = msg.highMid;
 
-  filtros.air = context.createBiquadFilter();
-  filtros.air.type = "highshelf";
-  filtros.air.frequency.value = 10000;
-  filtros.air.gain.value = msg.air;
+  filters.set("high", context.createBiquadFilter());
+  filters.get("high").type = "peaking";
+  filters.get("high").frequency.value = 6000;
+  filters.get("high").Q.value = 1;
+  filters.get("high").gain.value = msg.high;
 
+  filters.set("air", context.createBiquadFilter());
+  filters.get("air").type = "highshelf";
+  filters.get("air").frequency.value = 10000;
+  filters.get("air").gain.value = msg.air;
 
-  pre_viz = new AnalyserNode(context, {
-    fftSize: 2048,
-    maxDecibels: -25,
-    minDecibels: -100,
-    smoothingTimeConstant: 0.4,
-  });
-
-  post_viz= new AnalyserNode(context, {
-    fftSize: 2048,
-    maxDecibels: -25,
-    minDecibels: -100,
-    smoothingTimeConstant: 0.4,
-  });
 
   // 🔗 Conectar filtros en cadena
-  source.connect(pre_viz);
-  pre_viz.connect(filtros.sub);
-  filtros.sub.connect(filtros.bass);
-  filtros.bass.connect(filtros.lowMid);
-  filtros.lowMid.connect(filtros.mid);
-  filtros.mid.connect(filtros.highMid);
-  filtros.highMid.connect(filtros.high);
-  filtros.high.connect(filtros.air);
-  filtros.air.connect(post_viz);
-  post_viz.connect(context.destination);
+  pre_viz.connect(filters.get("sub"));
+  filters.get("sub").connect(filters.get("bass"));
+  filters.get("bass").connect(filters.get("lowMid"));
+  filters.get("lowMid").connect(filters.get("mid"));
+  filters.get("mid").connect(filters.get("highMid"));
+  filters.get("highMid").connect(filters.get("high"));
+  filters.get("high").connect(filters.get("air"));
+  filters.get("air").connect(post_viz);
 
   contexts.set(msg.tabId, context);
+}
+
+function reconectarCadena(tabId) {
+  if (!medias.has(tabId)) return;
+
+  let anterior = pre_viz;
+
+  for (const filtro of filtrosDinamicos) {
+    anterior.disconnect?.();
+    anterior.connect(filtro.node);
+    anterior = filtro.node;
+  }
+
+  anterior.disconnect?.();
+  anterior.connect(post_viz);
 }

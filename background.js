@@ -35,7 +35,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       // chrome.runtime.sendMessage({ ...message, target: "offscreen" });
       break;
     default:
-      console.log("[ERROR] message no identificado");
+      // console.log("[ERROR] message no identificado");
       break;
   }
 

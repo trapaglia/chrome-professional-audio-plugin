@@ -1,42 +1,87 @@
+import { getActiveTabId } from "./popup.js";
+
 let filtrosActivos = [];
 
 document.getElementById("agregar-filtro").addEventListener("click", () => {
-const id = crypto.randomUUID();
-const contenedor = document.createElement("div");
-contenedor.className = "filtro-card";
-contenedor.style = "padding: 10px; background: #f5f5ff; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 6px; position: relative;";
-contenedor.setAttribute("data-id", id);
+    const id = crypto.randomUUID();
+    const filtro = {
+      id,
+      freq: 1000,
+      q: 1,
+      gain: 0
+    };
 
-contenedor.innerHTML = `
-    <label>Frecuencia (Hz) <span class="freq-value">1000</span>
-    <input type="range" min="20" max="20000" step="10" value="1000" class="freq" style="width: 100%;">
-    </label>
-    <label>Q <span class="q-value">1</span>
-    <input type="range" min="0.1" max="10" step="0.1" value="1" class="q" style="width: 100%;">
-    </label>
-    <label>Ganancia (dB) <span class="gain-value">0</span>
-    <input type="range" min="-30" max="30" step="1" value="0" class="gain" style="width: 100%;">
-    </label>
-    <button class="eliminar" style="position: absolute; top: 8px; right: 8px; background: #ffdcdc; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer;">×</button>
-`;
+    const contenedor = document.createElement("div");
+    contenedor.className = "filtro-card";
+    contenedor.style = "padding: 7px; background: #f5f5ff; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 6px; position: relative;";
+    contenedor.setAttribute("data-id", id);
 
-contenedor.querySelector(".freq").addEventListener("input", (e) => {
-    contenedor.querySelector(".freq-value").textContent = e.target.value;
+    contenedor.innerHTML = `
+        <label>Frecuencia (Hz) <span class="freq-value">1000</span>
+        <input type="range" min="20" max="20000" step="10" value="1000" class="freq" style="width: 100%;">
+        </label>
+        <label>Q <span class="q-value">1</span>
+        <input type="range" min="0.1" max="10" step="0.1" value="1" class="q" style="width: 100%;">
+        </label>
+        <label>Ganancia (dB) <span class="gain-value">0</span>
+        <input type="range" min="-30" max="30" step="1" value="0" class="gain" style="width: 100%;">
+        </label>
+        <button class="eliminar" style="position: absolute; top: 8px; right: 8px; background: #ffdcdc; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer;">×</button>
+    `;
+
+    contenedor.querySelector(".freq").addEventListener("input", (e) => {
+        contenedor.querySelector(".freq-value").textContent = e.target.value;
+        filtro.freq = parseFloat(e.target.value);
+        enviarActualizacion(filtro);
+    });
+
+    contenedor.querySelector(".q").addEventListener("input", (e) => {
+        contenedor.querySelector(".q-value").textContent = e.target.value;
+        filtro.q = parseFloat(e.target.value);
+        enviarActualizacion(filtro);
+    });
+
+    contenedor.querySelector(".gain").addEventListener("input", (e) => {
+        contenedor.querySelector(".gain-value").textContent = e.target.value;
+        filtro.gain = parseFloat(e.target.value);
+        enviarActualizacion(filtro);
+    });
+
+    contenedor.querySelector(".eliminar").addEventListener("click", () => {
+        contenedor.remove();
+        filtrosActivos = filtrosActivos.filter(f => f.id !== id);
+        chrome.runtime.sendMessage({
+            type: "eliminar-filtro-dinamico",
+            filtroId: id
+        });
+    });
+
+    filtrosActivos.push(filtro);
+    document.getElementById("filtros-container").appendChild(contenedor);
+    enviarActualizacion(filtro);
 });
 
-contenedor.querySelector(".q").addEventListener("input", (e) => {
-    contenedor.querySelector(".q-value").textContent = e.target.value;
-});
+function enviarActualizacion(filtro) {
+    chrome.runtime.sendMessage({
+      type: "actualizar-filtro-dinamico",
+      filtroId: filtro.id,
+      freq: filtro.freq,
+      q: filtro.q,
+      gain: filtro.gain,
+      tabId: getActiveTabId()
+    });
+  }
 
-contenedor.querySelector(".gain").addEventListener("input", (e) => {
-    contenedor.querySelector(".gain-value").textContent = e.target.value;
-});
+function guardarFiltros() {
+    chrome.storage.local.set({ filtrosDinamicos: filtrosActivos });
+}
 
-contenedor.querySelector(".eliminar").addEventListener("click", () => {
-    contenedor.remove();
-    filtrosActivos = filtrosActivos.filter(f => f.id !== id);
-});
-
-filtrosActivos.push({ id });
-document.getElementById("filtros-container").appendChild(contenedor);
+chrome.storage.local.get("filtrosDinamicos", (data) => {
+if (Array.isArray(data.filtrosDinamicos)) {
+    filtrosActivos = data.filtrosDinamicos;
+    filtrosActivos.forEach(filtro => {
+    crearFiltroCard(filtro);
+    enviarActualizacion(filtro);
+    });
+}
 });

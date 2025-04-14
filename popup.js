@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-async function getActiveTabId() {
+export async function getActiveTabId() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return tab.id;
 }
