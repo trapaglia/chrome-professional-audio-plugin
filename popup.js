@@ -3,6 +3,7 @@ let offscreenPort = null;
 let loops = null;
 let boton = null;
 const filters = ["sub", "bass", "lowMid", "mid", "highMid", "high", "air"];
+const staticFiltering = false;
 
 // 🧠 Guardar y restaurar estado de los 8 sliders + estado de audio
 
@@ -88,12 +89,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId });
       const eqValores = {}
-      filters.forEach((filter) => {
-        eqValores[filter] = parseFloat(document.getElementById(filter).value);
-      });
+      if (staticFiltering) {
+        filters.forEach((filter) => {
+          eqValores[filter] = parseFloat(document.getElementById(filter).value);
+        });
+      }
       await chrome.runtime.sendMessage({
         type: "start-processing",
-        // target: "offscreen",
         tabId,
         streamId,
         level: parseFloat(document.getElementById("volumen").value),
