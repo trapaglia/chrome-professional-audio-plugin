@@ -319,7 +319,9 @@ function setupEQ(context, msg) {
 function reconectarCadena(tabId) {
   if (!medias.has(tabId)) return;
 
-  let anterior = pre_viz.get(tabId);
+  const volume = sources.get(tabId + "_volume");
+
+  let anterior = volume;
 
   for (const filtro of Array.from(filtrosDinamicos.get(tabId).values())) {
     anterior.disconnect?.();
