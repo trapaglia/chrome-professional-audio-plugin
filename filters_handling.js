@@ -10,11 +10,17 @@ document.getElementById("agregar-filtro").addEventListener("click", () => {
       q: 1,
       gain: 0
     };
+    crearFiltroCard(filtro);
+    filtrosActivos.push(filtro);
+    enviarActualizacion(filtro);
+    guardarFiltros();
+});
 
+function crearFiltroCard(filtro) {
     const contenedor = document.createElement("div");
     contenedor.className = "filtro-card";
     contenedor.style = "padding: 7px; background: #f5f5ff; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 6px; position: relative;";
-    contenedor.setAttribute("data-id", id);
+    contenedor.setAttribute("data-id", filtro.id);
 
     contenedor.innerHTML = `
         <label>Frecuencia (Hz) <span class="freq-value">1000</span>
@@ -33,33 +39,35 @@ document.getElementById("agregar-filtro").addEventListener("click", () => {
         contenedor.querySelector(".freq-value").textContent = e.target.value;
         filtro.freq = parseFloat(e.target.value);
         enviarActualizacion(filtro);
+        guardarFiltros();
     });
 
     contenedor.querySelector(".q").addEventListener("input", (e) => {
         contenedor.querySelector(".q-value").textContent = e.target.value;
         filtro.q = parseFloat(e.target.value);
         enviarActualizacion(filtro);
+        guardarFiltros();
     });
 
     contenedor.querySelector(".gain").addEventListener("input", (e) => {
         contenedor.querySelector(".gain-value").textContent = e.target.value;
         filtro.gain = parseFloat(e.target.value);
         enviarActualizacion(filtro);
+        guardarFiltros();
     });
 
     contenedor.querySelector(".eliminar").addEventListener("click", () => {
         contenedor.remove();
-        filtrosActivos = filtrosActivos.filter(f => f.id !== id);
+        filtrosActivos = filtrosActivos.filter(f => f.id !== filtro.id);
         chrome.runtime.sendMessage({
             type: "eliminar-filtro-dinamico",
-            filtroId: id
+            filtroId: filtro.id
         });
+        guardarFiltros();
     });
 
-    filtrosActivos.push(filtro);
     document.getElementById("filtros-container").appendChild(contenedor);
-    enviarActualizacion(filtro);
-});
+}
 
 async function enviarActualizacion(filtro) {
     chrome.runtime.sendMessage({
@@ -76,12 +84,14 @@ function guardarFiltros() {
     chrome.storage.local.set({ filtrosDinamicos: filtrosActivos });
 }
 
-chrome.storage.local.get("filtrosDinamicos", (data) => {
-if (Array.isArray(data.filtrosDinamicos)) {
-    filtrosActivos = data.filtrosDinamicos;
-    filtrosActivos.forEach(filtro => {
-    crearFiltroCard(filtro);
-    enviarActualizacion(filtro);
+export function cargarFiltros() {
+    chrome.storage.local.get("filtrosDinamicos", (data) => {
+        if (Array.isArray(data.filtrosDinamicos)) {
+            filtrosActivos = data.filtrosDinamicos;
+            filtrosActivos.forEach(filtro => {
+            crearFiltroCard(filtro);
+            enviarActualizacion(filtro);
+            });
+        }
     });
 }
-});

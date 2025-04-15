@@ -4,6 +4,8 @@ chrome.runtime.onStartup.addListener(function() {
   chrome.storage.local.clear();
 });
 
+let popupOpenedBefore = false;
+
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.target !== "background") return;
@@ -12,6 +14,14 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       if (await createOffscreenDocument())
         chrome.runtime.sendMessage({ type: "offscreen-wakeup", target: "offscreen" });
       break;
+    case "check-first-popup-open":
+      if (!popupOpenedBefore) {
+        popupOpenedBefore = true;
+        sendResponse({ isFirstOpen: true });
+      } else {
+        sendResponse({ isFirstOpen: false });
+      }
+      return true;
     default:
       // console.log("[ERROR] message no identificado");
       break;

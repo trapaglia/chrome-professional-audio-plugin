@@ -1,3 +1,5 @@
+import { cargarFiltros } from "./filters_handling.js";
+
 let capturingAudio = false;
 let offscreenPort = null;
 let loops = null;
@@ -48,6 +50,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   boton = document.getElementById("activar");
   const estado = document.getElementById("estado");
   const debug = document.getElementById("debug");
+
+
+  // Verificar si es la primera vez que se abre el popup desde la inicialización
+  try {
+    const response = await sendMessagePromise({
+      type: "check-first-popup-open",
+      target: "background"
+    });
+    
+    if (response && response.isFirstOpen) {
+      console.log("[INFO] Primera apertura del popup desde la inicialización - Limpiando storage");
+      // Limpiar todas las variables guardadas
+      await chrome.storage.local.clear();
+      // Guardar que el audio está desactivado
+      chrome.storage.local.set({ capturingAudio: false });
+    }
+  } catch (error) {
+    console.error("[ERROR] Error al verificar primera apertura:", error);
+  }
+
+  cargarFiltros();
 
   chrome.runtime.sendMessage({ type: "offscreen-wakeup", target: "background" });
 
