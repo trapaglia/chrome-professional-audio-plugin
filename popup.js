@@ -7,6 +7,7 @@ let boton = null;
 const filters = ["sub", "bass", "lowMid", "mid", "highMid", "high", "air"];
 const staticFiltering = false;
 let debug_counter = 1;
+let activeFrequencyMarker = null;
 
 // 🧠 Guardar y restaurar estado de los 8 sliders + estado de audio
 
@@ -215,6 +216,25 @@ function drawVisualizer(data) {
   });
   ctx.stroke();
 
+  // Dibujar el marcador de frecuencia activa si existe
+  if (activeFrequencyMarker) {
+    const x = canvas.width * activeFrequencyMarker / 20000; // Normalizar a 20kHz
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#ff3366"; // Color llamativo para el marcador
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+    
+    // Etiqueta con el valor de frecuencia
+    ctx.fillStyle = "#ff3366";
+    ctx.font = "12px Arial";
+    ctx.fillText(`${activeFrequencyMarker} Hz`, x + 5, 15);
+  }
+}
+
+export function updateFrequencyMarker(frequency) {
+  activeFrequencyMarker = frequency;
 }
 
 chrome.runtime.onMessage.addListener((msg) => {

@@ -1,4 +1,4 @@
-import { getActiveTabId } from "./popup.js";
+import { getActiveTabId, updateFrequencyMarker } from "./popup.js";
 
 let filtrosActivos = [];
 
@@ -35,11 +35,21 @@ function crearFiltroCard(filtro) {
         <button class="eliminar" style="position: absolute; top: 8px; right: 8px; background: #ffdcdc; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer;">×</button>
     `;
 
-    contenedor.querySelector(".freq").addEventListener("input", (e) => {
+    const freqSlider = contenedor.querySelector(".freq");
+    freqSlider.addEventListener("input", (e) => {
         contenedor.querySelector(".freq-value").textContent = e.target.value;
         filtro.freq = parseFloat(e.target.value);
         enviarActualizacion(filtro);
         guardarFiltros();
+        updateFrequencyMarker(filtro.freq);
+    });
+
+    freqSlider.addEventListener("mouseenter", () => {
+        updateFrequencyMarker(filtro.freq);
+    });
+
+    freqSlider.addEventListener("mouseleave", () => {
+        updateFrequencyMarker(null);
     });
 
     contenedor.querySelector(".q").addEventListener("input", (e) => {
@@ -64,6 +74,7 @@ function crearFiltroCard(filtro) {
             filtroId: filtro.id
         });
         guardarFiltros();
+        updateFrequencyMarker(null);
     });
 
     document.getElementById("filtros-container").appendChild(contenedor);
@@ -95,3 +106,7 @@ export function cargarFiltros() {
         }
     });
 }
+
+// to do: 
+// 1. que cuando se desactive el audio, las barras caigan con gracia
+// 2. hacer andar el volumen
