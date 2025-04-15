@@ -61,14 +61,14 @@ document.getElementById("agregar-filtro").addEventListener("click", () => {
     enviarActualizacion(filtro);
 });
 
-function enviarActualizacion(filtro) {
+async function enviarActualizacion(filtro) {
     chrome.runtime.sendMessage({
       type: "actualizar-filtro-dinamico",
       filtroId: filtro.id,
       freq: filtro.freq,
       q: filtro.q,
       gain: filtro.gain,
-      tabId: getActiveTabId()
+      tabId: await getActiveTabId()
     });
   }
 

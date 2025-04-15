@@ -113,6 +113,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("[WARNING] Opened offscreen port because it was closed");
       }
     } else {
+      if (!offscreenPort) {
+        console.log("[WARNING] No hay puerto offscreen");
+        return;
+      }
       estado.textContent = "Deteniendo audio..." + debug_counter++;
       await chrome.runtime.sendMessage({
         type: "stop-processing",

@@ -17,12 +17,14 @@ chrome.runtime.onMessage.addListener(async (msg) => {
   switch (msg.type) {
     case "actualizar-filtro-dinamico":
       if (!contexts.has(msg.tabId)) {
-        console.error("AudioContext no inicializado");
+        console.error("[offscreen] AudioContext no inicializado");
+        alert("[offscreen] AudioContext no inicializado");
         return;
       }
       const context = contexts.get(msg.tabId);
       if (!sources.has(msg.tabId)) {
-        console.error("MediaStreamSource no inicializado");
+        console.error("[offscreen] MediaStreamSource no inicializado");
+        alert("[offscreen] MediaStreamSource no inicializado");
         return;
       }
       const source = sources.get(msg.tabId);
@@ -130,6 +132,7 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     contexts.set(msg.tabId, context);
     const source = context.createMediaStreamSource(media);
     sources.set(msg.tabId, source);
+    console.log("[INFO] AudioContext inicializado en tab " + msg.tabId);
 
 
     pre_viz = new AnalyserNode(context, {
@@ -197,6 +200,7 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       console.log("[INFO] Closing AudioContext");
       if (context && context.state === 'running') {
         context.close(); // cierra el AudioContext
+        console.log("[INFO] AudioContext cerrado en tab " + msg.tabId);
       } else {
         console.log("[Info] AudioContext already closed !");
       }
@@ -208,8 +212,8 @@ chrome.runtime.onMessage.addListener(async (msg) => {
         });
       }
 
-      if (filtrosDinamicos.has(msg.tabId)) {
-        const f = filtrosDinamicos.get(msg.tabId);
+      if (filtrosDinamicos.size > 0) {
+        const f = Array.from(filtrosDinamicos.values());
         f.forEach((filtro) => {
           filtro.disconnect();
         });
@@ -290,10 +294,10 @@ function reconectarCadena(tabId) {
 
   let anterior = pre_viz;
 
-  for (const filtro of filtrosDinamicos) {
+  for (const filtro of Array.from(filtrosDinamicos.values())) {
     anterior.disconnect?.();
-    anterior.connect(filtro.node);
-    anterior = filtro.node;
+    anterior.connect(filtro);
+    anterior = filtro;
   }
 
   anterior.disconnect?.();
