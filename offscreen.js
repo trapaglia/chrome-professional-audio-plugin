@@ -9,6 +9,7 @@ const post_viz = new Map();
 const staticFilters = new Map();
 // const bandas_filtros = ["sub", "bass", "lowMid", "mid", "highMid", "high", "air"];
 const staticFiltering = false;
+let offscreenInitialized = false;
 
 // 🎧 offscreen.js — gestión de filtros dinámicos de ecualización 🎛️
 
@@ -115,6 +116,11 @@ chrome.runtime.onMessage.addListener(async (msg) => {
   if (msg.target !== "offscreen") return;
 
   if (msg.type === "offscreen-wakeup") {
+    if (!offscreenInitialized) {
+      console.log("[INFO] Primera inicialización del offscreen - Limpiando datos");
+      clearAllData();
+      offscreenInitialized = true;
+    }
     chrome.runtime.sendMessage({ type: "offscreen-alive" });
     return;
   }
@@ -331,4 +337,38 @@ function reconectarCadena(tabId) {
 
   anterior.disconnect?.();
   anterior.connect(post_viz.get(tabId));
+}
+
+function clearAllData() {
+  console.log("[INFO] Limpiando todas las estructuras de datos del offscreen");
+  
+  // Desconectar y limpiar todos los nodos de audio
+  for (const [tabId, context] of contexts.entries()) {
+    try {
+      // Detener todos los tracks de audio
+      if (medias.has(tabId)) {
+        const media = medias.get(tabId);
+        media.getTracks().forEach(track => track.stop());
+      }
+      
+      // Cerrar el contexto de audio
+      if (context && context.state === 'running') {
+        context.close();
+      }
+    } catch (e) {
+      console.error("[ERROR] Error al limpiar contexto para tab", tabId, e);
+    }
+  }
+  
+  // Limpiar todas las estructuras de datos
+  filtrosDinamicos.clear();
+  contexts.clear();
+  medias.clear();
+  sources.clear();
+  loops.clear();
+  pre_viz.clear();
+  post_viz.clear();
+  staticFilters.clear();
+  
+  console.log("[INFO] Todas las estructuras de datos del offscreen han sido limpiadas");
 }
