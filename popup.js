@@ -84,7 +84,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (capturingAudio) {
       boton.textContent = "Detener Audio 🔇";
       openOffscreenPort();
-      // updateVisualizer();
     } else {
       boton.textContent = "Activar Audio 🎤";
     }
@@ -331,12 +330,13 @@ filters.forEach((id) => {
   });
 });
 
-function updateVisualizer() {
-  function loop() {
+async function updateVisualizer() {
+  async function loop() {
     if (offscreenPort) {
       offscreenPort.postMessage({
         type: "give-me-viz",
         target: "offscreen",
+        tabId: await getActiveTabId(),
       });
     } else {
       console.assert(false, "[popup] No hay puerto offscreen");

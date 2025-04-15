@@ -4,8 +4,8 @@ const medias = new Map();
 const sources = new Map();
 let popupPort = null;
 let loops = new Map();
-let pre_viz = null;
-let post_viz = null;
+const pre_viz = new Map();
+const post_viz = new Map();
 const staticFilters = new Map();
 // const bandas_filtros = ["sub", "bass", "lowMid", "mid", "highMid", "high", "air"];
 const staticFiltering = false;
@@ -29,13 +29,16 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       }
       const source = sources.get(msg.tabId);
 
-      filtro = filtrosDinamicos.get(msg.filtroId);
+      if (!filtrosDinamicos.has(msg.tabId)) {
+        filtrosDinamicos.set(msg.tabId, new Map());
+      }
+      filtro = filtrosDinamicos.get(msg.tabId).get(msg.filtroId);
       if (!filtro) {
         filtro = context.createBiquadFilter();
         filtro.type = "peaking";
         source.connect(filtro);
         filtro.connect(context.destination);
-        filtrosDinamicos.set(msg.filtroId, filtro);
+        filtrosDinamicos.get(msg.tabId).set(msg.filtroId, filtro);
       }
 
       filtro.frequency.value = msg.freq;
@@ -44,10 +47,13 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       reconectarCadena(msg.tabId);
       break;
     case "eliminar-filtro-dinamico":
-      filtro = filtrosDinamicos.get(msg.filtroId);
+      if (!filtrosDinamicos.has(msg.tabId)) {
+        filtrosDinamicos.set(msg.tabId, new Map());
+      }
+      filtro = filtrosDinamicos.get(msg.tabId).get(msg.filtroId);
       if (filtro) {
         filtro.disconnect();
-        filtrosDinamicos.delete(msg.filtroId);
+        filtrosDinamicos.get(msg.tabId).delete(msg.filtroId);
       }
       reconectarCadena(msg.tabId);
       break;
@@ -77,18 +83,18 @@ chrome.runtime.onConnect.addListener((port) => {
           }
           break;
         case "give-me-viz":
-          // DEBUG HERE TODO FIXME
-          // Error in event handler: TypeError: Cannot read properties of null (reading 'frequencyBinCount')
-          if (!pre_viz || !post_viz) {
+          if (!pre_viz.has(msg.tabId) || !post_viz.has(msg.tabId)) {
             console.log("[ERROR] pre_viz o post_viz no inicializados");
+            console.log("[ERROR] tabId: " + msg.tabId);
+            console.log("[ERROR] pre_viz: " + pre_viz);
+            console.log("[ERROR] post_viz: " + post_viz);
             alert("[offscreen] No se puede capturar el audio en este momento. Intenta recargar la página");
             return;
           }
-          const pre_bins = new Uint8Array(pre_viz.frequencyBinCount);
-          // DEBUG HERE TODO FIXME
-          pre_viz.getByteFrequencyData(pre_bins);
-          const post_bins = new Uint8Array(post_viz.frequencyBinCount);
-          post_viz.getByteFrequencyData(post_bins);
+          const pre_bins = new Uint8Array(pre_viz.get(msg.tabId).frequencyBinCount);
+          pre_viz.get(msg.tabId).getByteFrequencyData(pre_bins);
+          const post_bins = new Uint8Array(post_viz.get(msg.tabId).frequencyBinCount);
+          post_viz.get(msg.tabId).getByteFrequencyData(post_bins);
           if (popupPort) {
             popupPort.postMessage({
               type: "visualizer-data",
@@ -106,7 +112,6 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 chrome.runtime.onMessage.addListener(async (msg) => {
-  if (msg.target !== "offscreen") return;
   if (msg.target !== "offscreen") return;
 
   if (msg.type === "offscreen-wakeup") {
@@ -135,27 +140,27 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     console.log("[INFO] AudioContext inicializado en tab " + msg.tabId);
 
 
-    pre_viz = new AnalyserNode(context, {
+    pre_viz.set(msg.tabId, new AnalyserNode(context, {
       fftSize: 2048,
       maxDecibels: -25,
       minDecibels: -100,
       smoothingTimeConstant: 0.4,
-    });
+    }));
 
     const volume = context.createGain();
     volume.gain.value = msg.level;
     sources.set(msg.tabId + "_volume", volume);
 
-    post_viz= new AnalyserNode(context, {
+    post_viz.set(msg.tabId, new AnalyserNode(context, {
       fftSize: 2048,
       maxDecibels: -25,
       minDecibels: -100,
       smoothingTimeConstant: 0.4,
-    });
-    source.connect(pre_viz);
-    pre_viz.connect(volume);
-    volume.connect(post_viz);
-    post_viz.connect(context.destination);
+    }));
+    source.connect(pre_viz.get(msg.tabId));
+    pre_viz.get(msg.tabId).connect(volume);
+    volume.connect(post_viz.get(msg.tabId));
+    post_viz.get(msg.tabId).connect(context.destination);
     console.log("[INFO] AudioContext inicializado")
     console.log("[INFO] MediaStreamSource inicializado")
     // console.log("source:")
@@ -232,8 +237,8 @@ chrome.runtime.onMessage.addListener(async (msg) => {
         });
       }
 
-      if (filtrosDinamicos.size > 0) {
-        const f = Array.from(filtrosDinamicos.values());
+      if (filtrosDinamicos.get(msg.tabId).size > 0) {
+        const f = Array.from(filtrosDinamicos.get(msg.tabId).values());
         f.forEach((filtro) => {
           filtro.disconnect();
         });
@@ -300,28 +305,28 @@ function setupEQ(context, msg) {
 
 
   // 🔗 Conectar filtros en cadena
-  pre_viz.connect(filters.get("sub"));
+  pre_viz.get(tabId).connect(filters.get("sub"));
   filters.get("sub").connect(filters.get("bass"));
   filters.get("bass").connect(filters.get("lowMid"));
   filters.get("lowMid").connect(filters.get("mid"));
   filters.get("mid").connect(filters.get("highMid"));
   filters.get("highMid").connect(filters.get("high"));
   filters.get("high").connect(filters.get("air"));
-  filters.get("air").connect(post_viz);
+  filters.get("air").connect(post_viz.get(tabId));
 
 }
 
 function reconectarCadena(tabId) {
   if (!medias.has(tabId)) return;
 
-  let anterior = pre_viz;
+  let anterior = pre_viz.get(tabId);
 
-  for (const filtro of Array.from(filtrosDinamicos.values())) {
+  for (const filtro of Array.from(filtrosDinamicos.get(tabId).values())) {
     anterior.disconnect?.();
     anterior.connect(filtro);
     anterior = filtro;
   }
 
   anterior.disconnect?.();
-  anterior.connect(post_viz);
+  anterior.connect(post_viz.get(tabId));
 }
