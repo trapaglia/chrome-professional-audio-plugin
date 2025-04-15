@@ -9,7 +9,6 @@ const staticFiltering = false;
 let debug_counter = 1;
 let activeFrequencyMarker = null;
 let activeQMarker = null;
-const volumen_normalizer = 70;
 
 // 🧠 Guardar y restaurar estado de los 8 sliders + estado de audio
 
@@ -54,7 +53,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   boton = document.getElementById("activar");
   const estado = document.getElementById("estado");
   const debug = document.getElementById("debug");
-
 
   // Verificar si es la primera vez que se abre el popup desde la inicialización
   try {
@@ -127,7 +125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         target: "offscreen",
         tabId,
         streamId,
-        level: parseFloat(document.getElementById("volumen").value) / volumen_normalizer,
+        level: dbToGain(parseFloat(document.getElementById("volumen").value)),
         ...eqValores,
       });
       boton.textContent = "Detener Audio 🔇";
@@ -156,6 +154,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     guardarEstado();
+  });
+
+  // Inicializar el texto del volumen
+  const volumenSlider = document.getElementById("volumen");
+  if (volumenSlider) {
+    updateVolumeText(volumenSlider.value);
+  }
+
+  // Agregar evento para el slider de volumen
+  document.getElementById("volumen").addEventListener("input", async (e) => {
+    const tabId = await getActiveTabId();
+    const volumenValue = parseFloat(e.target.value);
+    
+    // Actualizar el texto que muestra el valor en dB
+    updateVolumeText(volumenValue);
+    
+    // Enviar el mensaje para ajustar el volumen
+    chrome.runtime.sendMessage({
+      type: "ajustar-volumen",
+      target: "offscreen",
+      tabId,
+      level: dbToGain(volumenValue), // Convertir dB a ganancia
+    });
+    
+    // Guardar el estado del volumen
+    guardarEstado();
+  });
+
+  filters.forEach((id) => {
+    document.getElementById(id)?.addEventListener("input", async (e) => {
+      const tabId = await getActiveTabId();
+      chrome.runtime.sendMessage({
+        type: "ajustar-filtro",
+        target: "offscreen",
+        tabId,
+        banda: id,
+        valor: parseFloat(e.target.value),
+      });
+      guardarEstado();
+    });
   });
 });
 
@@ -299,36 +337,18 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 });
 
-// Agregar evento para el slider de volumen
-document.getElementById("volumen").addEventListener("input", async (e) => {
-  const tabId = await getActiveTabId();
-  const volumenValue = parseFloat(e.target.value);
-  
-  // Enviar el mensaje para ajustar el volumen
-  chrome.runtime.sendMessage({
-    type: "ajustar-volumen",
-    target: "offscreen",
-    tabId,
-    level: volumenValue / volumen_normalizer, // Normalizar a un valor entre 0 y 1
-  });
-  
-  // Guardar el estado del volumen
-  guardarEstado();
-});
+// Función para convertir dB a valor de ganancia para Web Audio API
+function dbToGain(db) {
+  return Math.pow(10, db / 20);
+}
 
-filters.forEach((id) => {
-  document.getElementById(id)?.addEventListener("input", async (e) => {
-    const tabId = await getActiveTabId();
-    chrome.runtime.sendMessage({
-      type: "ajustar-filtro",
-      target: "offscreen",
-      tabId,
-      banda: id,
-      valor: parseFloat(e.target.value),
-    });
-    guardarEstado();
-  });
-});
+// Actualizar el texto del valor de volumen en dB
+function updateVolumeText(dbValue) {
+  const volumeValueElement = document.getElementById("volumen-value");
+  if (volumeValueElement) {
+    volumeValueElement.textContent = `${dbValue} dB`;
+  }
+}
 
 async function updateVisualizer() {
   async function loop() {

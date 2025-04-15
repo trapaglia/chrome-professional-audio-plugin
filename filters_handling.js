@@ -7,7 +7,7 @@ document.getElementById("agregar-filtro").addEventListener("click", () => {
     const filtro = {
       id,
       freq: 1000,
-      q: 1,
+      q: 5,
       gain: 0
     };
     crearFiltroCard(filtro);
@@ -26,8 +26,8 @@ function crearFiltroCard(filtro) {
         <label>Frecuencia (Hz) <span class="freq-value">1000</span>
         <input type="range" min="20" max="20000" step="10" value="1000" class="freq" style="width: 100%;">
         </label>
-        <label>Q <span class="q-value">1</span>
-        <input type="range" min="0.1" max="10" step="0.1" value="1" class="q" style="width: 100%;">
+        <label>Q <span class="q-value">5</span>
+        <input type="range" min="0.1" max="10" step="0.1" value="5" class="q" style="width: 100%;">
         </label>
         <label>Ganancia (dB) <span class="gain-value">0</span>
         <input type="range" min="-30" max="30" step="1" value="0" class="gain" style="width: 100%;">
