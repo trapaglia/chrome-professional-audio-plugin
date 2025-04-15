@@ -50,13 +50,15 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     case "eliminar-filtro-dinamico":
       if (!filtrosDinamicos.has(msg.tabId)) {
         filtrosDinamicos.set(msg.tabId, new Map());
+        return;
       }
+      
       filtro = filtrosDinamicos.get(msg.tabId).get(msg.filtroId);
       if (filtro) {
         filtro.disconnect();
         filtrosDinamicos.get(msg.tabId).delete(msg.filtroId);
-      }
-      reconectarCadena(msg.tabId);
+        reconectarCadena(msg.tabId);
+      } 
       break;
     default:
       break;

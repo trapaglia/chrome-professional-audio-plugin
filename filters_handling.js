@@ -80,15 +80,20 @@ function crearFiltroCard(filtro) {
         guardarFiltros();
     });
 
-    contenedor.querySelector(".eliminar").addEventListener("click", () => {
+    contenedor.querySelector(".eliminar").addEventListener("click", async () => {
         contenedor.remove();
         filtrosActivos = filtrosActivos.filter(f => f.id !== filtro.id);
+        const tabId = await getActiveTabId();
+        
         chrome.runtime.sendMessage({
             type: "eliminar-filtro-dinamico",
-            filtroId: filtro.id
+            filtroId: filtro.id,
+            tabId: tabId
         });
+        
         guardarFiltros();
         updateFrequencyMarker(null);
+        updateQMarker(null);
     });
 
     document.getElementById("filtros-container").appendChild(contenedor);
