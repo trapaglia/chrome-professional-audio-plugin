@@ -8,6 +8,7 @@ const filters = ["sub", "bass", "lowMid", "mid", "highMid", "high", "air"];
 const staticFiltering = false;
 let debug_counter = 1;
 let activeFrequencyMarker = null;
+const volumen_normalizer = 70;
 
 // 🧠 Guardar y restaurar estado de los 8 sliders + estado de audio
 
@@ -126,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         target: "offscreen",
         tabId,
         streamId,
-        level: parseFloat(document.getElementById("volumen").value),
+        level: parseFloat(document.getElementById("volumen").value) / volumen_normalizer,
         ...eqValores,
       });
       boton.textContent = "Detener Audio 🔇";
@@ -254,7 +255,7 @@ document.getElementById("volumen").addEventListener("input", async (e) => {
     type: "ajustar-volumen",
     target: "offscreen",
     tabId,
-    level: volumenValue / 100, // Normalizar a un valor entre 0 y 1
+    level: volumenValue / volumen_normalizer, // Normalizar a un valor entre 0 y 1
   });
   
   // Guardar el estado del volumen

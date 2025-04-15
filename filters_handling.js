@@ -110,3 +110,4 @@ export function cargarFiltros() {
 // to do: 
 // 1. que cuando se desactive el audio, las barras caigan con gracia
 // 2. hacer andar el volumen
+// 3. ver porque no se carga el audio volumen cuando desactivo y reactivo el audio(pero si el slider)

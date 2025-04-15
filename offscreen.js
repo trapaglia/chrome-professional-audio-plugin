@@ -169,7 +169,7 @@ chrome.runtime.onMessage.addListener(async (msg) => {
   }
 
   if (msg.type === "ajustar-volumen") {
- if (!contexts.has(msg.tabId)) {
+    if (!contexts.has(msg.tabId)) {
       console.log("[ERROR] No hay contexto de audio para ajustar el volumen");
       return;
     }
@@ -237,6 +237,11 @@ chrome.runtime.onMessage.addListener(async (msg) => {
         f.forEach((filtro) => {
           filtro.disconnect();
         });
+      }
+
+      const volume = sources.get(msg.tabId + "_volume");
+      if (volume) {
+        volume.disconnect();
       }
 
       const media = medias.get(msg.tabId);
