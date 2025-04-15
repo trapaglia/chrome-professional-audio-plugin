@@ -1,4 +1,4 @@
-import { getActiveTabId, updateFrequencyMarker } from "./popup.js";
+import { getActiveTabId, updateFrequencyMarker, updateQMarker } from "./popup.js";
 
 let filtrosActivos = [];
 
@@ -42,14 +42,17 @@ function crearFiltroCard(filtro) {
         enviarActualizacion(filtro);
         guardarFiltros();
         updateFrequencyMarker(filtro.freq);
+        updateQMarker(filtro.q);
     });
 
     freqSlider.addEventListener("mouseenter", () => {
         updateFrequencyMarker(filtro.freq);
+        updateQMarker(filtro.q);
     });
 
     freqSlider.addEventListener("mouseleave", () => {
         updateFrequencyMarker(null);
+        updateQMarker(null);
     });
 
     contenedor.querySelector(".q").addEventListener("input", (e) => {
@@ -57,6 +60,17 @@ function crearFiltroCard(filtro) {
         filtro.q = parseFloat(e.target.value);
         enviarActualizacion(filtro);
         guardarFiltros();
+        updateQMarker(filtro.q);
+    });
+
+    contenedor.querySelector(".q").addEventListener("mouseenter", () => {
+        updateFrequencyMarker(filtro.freq);
+        updateQMarker(filtro.q);
+    });
+
+    contenedor.querySelector(".q").addEventListener("mouseleave", () => {
+        updateFrequencyMarker(null);
+        updateQMarker(null);
     });
 
     contenedor.querySelector(".gain").addEventListener("input", (e) => {

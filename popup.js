@@ -8,6 +8,7 @@ const filters = ["sub", "bass", "lowMid", "mid", "highMid", "high", "air"];
 const staticFiltering = false;
 let debug_counter = 1;
 let activeFrequencyMarker = null;
+let activeQMarker = null;
 const volumen_normalizer = 70;
 
 // 🧠 Guardar y restaurar estado de los 8 sliders + estado de audio
@@ -232,11 +233,65 @@ function drawVisualizer(data) {
     ctx.fillStyle = "#ff3366";
     ctx.font = "12px Arial";
     ctx.fillText(`${activeFrequencyMarker} Hz`, x + 5, 15);
+    
+    // 🔔 Dibujar la campana de Q si tenemos tanto frecuencia como Q
+    if (activeQMarker) {
+      // Dibujar la campana
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(255, 51, 102, 0.7)";
+      ctx.fillStyle = "rgba(255, 51, 102, 0.2)";
+      
+      // Calcular la escala de la campana basada en Q
+      // Cuanto mayor sea Q, más estrecha será la campana
+      const qScale = Math.max(20, 200 / activeQMarker); // Limitar el mínimo para Q muy altos
+      
+      // Dibujar la curva de campana
+      ctx.beginPath();
+      
+      // Puntos para la curva
+      const points = [];
+      const centerX = x;
+      const height = canvas.height * 0.7; // Altura máxima de la campana
+      
+      // Generar puntos para la curva de campana
+      for (let i = -canvas.width/2; i <= canvas.width/2; i += 5) {
+        const pointX = centerX + i;
+        if (pointX >= 0 && pointX <= canvas.width) {
+          // Fórmula de campana gaussiana
+          const pointY = canvas.height - height * Math.exp(-(i * i) / (2 * qScale * qScale));
+          points.push({x: pointX, y: pointY});
+        }
+      }
+      
+      // Dibujar la curva
+      if (points.length > 0) {
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.stroke();
+        
+        // Rellenar el área bajo la curva
+        ctx.lineTo(points[points.length-1].x, canvas.height);
+        ctx.lineTo(points[0].x, canvas.height);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Mostrar el valor de Q
+        ctx.fillStyle = "#ff3366";
+        ctx.fillText(`Q: ${activeQMarker.toFixed(1)}`, x + 5, 30);
+      }
+    }
   }
 }
 
 export function updateFrequencyMarker(frequency) {
   activeFrequencyMarker = frequency;
+}
+
+export function updateQMarker(q) {
+  activeQMarker = q;
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
