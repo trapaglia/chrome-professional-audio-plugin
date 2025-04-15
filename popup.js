@@ -12,7 +12,8 @@ let activeFrequencyMarker = null;
 // 🧠 Guardar y restaurar estado de los 8 sliders + estado de audio
 
 function guardarEstado() {
-  const keys = ["volumen", ...filters];
+  const keys = ["volumen"];
+  if (staticFiltering) keys.push(...filters);
   const estado = { capturingAudio: capturingAudio };
   keys.forEach((key) => {
     estado[key] = parseFloat(document.getElementById(key)?.value);
@@ -243,6 +244,23 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 });
 
+// Agregar evento para el slider de volumen
+document.getElementById("volumen").addEventListener("input", async (e) => {
+  const tabId = await getActiveTabId();
+  const volumenValue = parseFloat(e.target.value);
+  
+  // Enviar el mensaje para ajustar el volumen
+  chrome.runtime.sendMessage({
+    type: "ajustar-volumen",
+    target: "offscreen",
+    tabId,
+    level: volumenValue / 100, // Normalizar a un valor entre 0 y 1
+  });
+  
+  // Guardar el estado del volumen
+  guardarEstado();
+});
+
 filters.forEach((id) => {
   document.getElementById(id)?.addEventListener("input", async (e) => {
     const tabId = await getActiveTabId();
@@ -256,7 +274,6 @@ filters.forEach((id) => {
     guardarEstado();
   });
 });
-
 
 function updateVisualizer() {
   function loop() {

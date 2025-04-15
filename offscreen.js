@@ -142,6 +142,10 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       smoothingTimeConstant: 0.4,
     });
 
+    const volume = context.createGain();
+    volume.gain.value = msg.level;
+    sources.set(msg.tabId + "_volume", volume);
+
     post_viz= new AnalyserNode(context, {
       fftSize: 2048,
       maxDecibels: -25,
@@ -149,7 +153,8 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       smoothingTimeConstant: 0.4,
     });
     source.connect(pre_viz);
-    pre_viz.connect(post_viz);
+    pre_viz.connect(volume);
+    volume.connect(post_viz);
     post_viz.connect(context.destination);
     console.log("[INFO] AudioContext inicializado")
     console.log("[INFO] MediaStreamSource inicializado")
@@ -160,6 +165,21 @@ chrome.runtime.onMessage.addListener(async (msg) => {
 
     if (popupPort) {
       popupPort.postMessage({ type: "start-stream" });
+    }
+  }
+
+  if (msg.type === "ajustar-volumen") {
+ if (!contexts.has(msg.tabId)) {
+      console.log("[ERROR] No hay contexto de audio para ajustar el volumen");
+      return;
+    }
+    
+    const volumeNode = sources.get(msg.tabId + "_volume");
+    if (volumeNode) {
+      console.log("[INFO] Ajustando volumen a " + msg.level);
+      volumeNode.gain.value = msg.level;
+    } else {
+      console.log("[ERROR] No se encontró el nodo de volumen");
     }
   }
 
@@ -230,9 +250,6 @@ chrome.runtime.onMessage.addListener(async (msg) => {
 });
 
 function setupEQ(context, msg) {
-  const volume = context.createGain();
-  volume.gain.value = msg.level;
-
   staticFilters.set(msg.tabId, new Map());
   const filters = staticFilters.get(msg.tabId);
 
