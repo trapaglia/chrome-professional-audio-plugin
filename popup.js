@@ -205,6 +205,8 @@ export async function getActiveTabId() {
 function drawVisualizer(data) {
   const preData = data["pre"];
   const postData = data["post"];
+  const minDecibels = data["minDecibels"] || -100;
+  const maxDecibels = data["maxDecibels"] || -25;
   const canvas = document.getElementById("visual");
   const ctx = canvas.getContext("2d");
   const bufferLength = preData.length;
@@ -214,8 +216,73 @@ function drawVisualizer(data) {
   ctx.fillStyle = "#fefefe"; // blanco suave
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const barWidth = (canvas.width / bufferLength) * 0.9;
-  let x = 0;
+  // Función para normalizar valores de dB a altura de barra (0-1)
+  const normalizeDb = (dbValue) => {
+    // Limitar el valor entre minDecibels y maxDecibels
+    const clampedDb = Math.max(minDecibels, Math.min(maxDecibels, dbValue));
+    // Normalizar a un valor entre 0 y 1
+    return (clampedDb - minDecibels) / (maxDecibels - minDecibels);
+  };
+
+  // Dibujar escala de frecuencia logarítmica
+  ctx.fillStyle = "#aaa";
+  ctx.font = "10px Arial";
+  const freqLabels = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+  freqLabels.forEach(freq => {
+    // Convertir frecuencia a posición X usando escala logarítmica
+    const x = Math.log10(freq / 20) / Math.log10(20000 / 20) * canvas.width;
+    
+    // Dibujar línea vertical
+    ctx.strokeStyle = "#ddd";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+    
+    // Dibujar etiqueta
+    ctx.fillText(freq >= 1000 ? `${freq/1000}k` : freq, x - 10, canvas.height - 5);
+  });
+
+  // Dibujar escala de dB
+  const dbLabels = [-90, -80, -70, -60, -50, -40, -30];
+  dbLabels.forEach(db => {
+    const y = canvas.height - (normalizeDb(db) * canvas.height);
+    
+    // Dibujar línea horizontal
+    ctx.strokeStyle = "#eee";
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+    
+    // Dibujar etiqueta
+    ctx.fillText(`${db} dB`, 5, y + 12);
+  });
+
+  // Calcular ancho de barra para escala logarítmica
+  const barWidths = [];
+  const barPositions = [];
+  
+  // Crear posiciones de barras en escala logarítmica
+  for (let i = 0; i < bufferLength; i++) {
+    // Convertir índice a frecuencia (aproximadamente)
+    const freq = 20 * Math.pow(2, i / (bufferLength / 10));
+    if (freq > 20000) break; // Limitar a 20kHz
+    
+    // Convertir frecuencia a posición X
+    const x = Math.log10(freq / 20) / Math.log10(20000 / 20) * canvas.width;
+    barPositions.push(x);
+  }
+  
+  // Calcular anchos de barras
+  for (let i = 0; i < barPositions.length - 1; i++) {
+    barWidths.push(barPositions[i+1] - barPositions[i] - 1);
+  }
+  // Añadir el último ancho
+  if (barPositions.length > 0) {
+    barWidths.push(barWidths[barWidths.length - 1]);
+  }
 
   // ✨ Efecto glow
   ctx.shadowBlur = 10;
@@ -224,41 +291,35 @@ function drawVisualizer(data) {
 
   // 💜 Pre-EQ: violeta vivo con glow
   ctx.shadowColor = "rgba(190, 90, 255, 0.6)";
-  for (let i = 0; i < bufferLength; i++) {
-    const barHeight = preData[i];
+  for (let i = 0; i < Math.min(barPositions.length, preData.length); i++) {
+    const barHeight = normalizeDb(preData[i]) * canvas.height;
+    const x = barPositions[i];
+    const width = Math.max(1, barWidths[i] * 0.9); // Asegurar un mínimo de 1px
+    
     ctx.fillStyle = "rgba(190, 90, 255, 0.5)";
-    ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
-    x += barWidth + 1;
+    ctx.fillRect(x, canvas.height - barHeight, width, barHeight);
   }
 
   // 💚 Post-EQ: verde neón claro con glow
   ctx.shadowColor = "rgba(50, 220, 120, 0.6)";
-  x = 0;
-  for (let i = 0; i < bufferLength; i++) {
-    const barHeight = postData[i];
+  for (let i = 0; i < Math.min(barPositions.length, postData.length); i++) {
+    const barHeight = normalizeDb(postData[i]) * canvas.height;
+    const x = barPositions[i];
+    const width = Math.max(1, barWidths[i] * 0.9); // Asegurar un mínimo de 1px
+    
     ctx.fillStyle = "rgba(50, 220, 120, 0.6)";
-    ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-    x += barWidth + 1;
+    ctx.fillRect(x, canvas.height - barHeight, width, barHeight);
   }
 
   // 🧽 Limpiar efectos
   ctx.shadowBlur = 0;
   ctx.shadowColor = "transparent";
 
-  // 🔀 Lneas verticales en 60, 1000, 8000 Hz
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = "#666";
-  ctx.beginPath();
-  [60, 1000, 8000].forEach((freq) => {
-    const x = canvas.width * freq / 10000;
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, canvas.height);
-  });
-  ctx.stroke();
-
   // Dibujar el marcador de frecuencia activa si existe
   if (activeFrequencyMarker) {
-    const x = canvas.width * activeFrequencyMarker / 20000; // Normalizar a 20kHz
+    // Convertir frecuencia a posición X usando escala logarítmica
+    const x = Math.log10(activeFrequencyMarker / 20) / Math.log10(20000 / 20) * canvas.width;
+    
     ctx.lineWidth = 2;
     ctx.strokeStyle = "#ff3366"; // Color llamativo para el marcador
     ctx.beginPath();
@@ -290,12 +351,18 @@ function drawVisualizer(data) {
       const centerX = x;
       const height = canvas.height * 0.7; // Altura máxima de la campana
       
-      // Generar puntos para la curva de campana
+      // Generar puntos para la curva de campana en escala logarítmica
       for (let i = -canvas.width/2; i <= canvas.width/2; i += 5) {
         const pointX = centerX + i;
         if (pointX >= 0 && pointX <= canvas.width) {
-          // Fórmula de campana gaussiana
-          const pointY = canvas.height - height * Math.exp(-(i * i) / (2 * qScale * qScale));
+          // Convertir posición X a frecuencia
+          const freq = 20 * Math.pow(10, (pointX / canvas.width) * Math.log10(20000 / 20));
+          const freqRatio = freq / activeFrequencyMarker;
+          
+          // Fórmula de campana para filtro peaking en escala logarítmica
+          const response = 1 / Math.sqrt(1 + Math.pow(activeQMarker * (freqRatio - 1/freqRatio), 2));
+          const pointY = canvas.height - height * response;
+          
           points.push({x: pointX, y: pointY});
         }
       }

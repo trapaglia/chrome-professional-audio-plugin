@@ -101,14 +101,21 @@ chrome.runtime.onConnect.addListener((port) => {
             alert("[offscreen] No se puede capturar el audio en este momento. Intenta recargar la página");
             return;
           }
-          const pre_bins = new Uint8Array(pre_viz.get(msg.tabId).frequencyBinCount);
-          pre_viz.get(msg.tabId).getByteFrequencyData(pre_bins);
-          const post_bins = new Uint8Array(post_viz.get(msg.tabId).frequencyBinCount);
-          post_viz.get(msg.tabId).getByteFrequencyData(post_bins);
+          // Usar Float32Array para obtener valores en dB
+          const pre_bins = new Float32Array(pre_viz.get(msg.tabId).frequencyBinCount);
+          pre_viz.get(msg.tabId).getFloatFrequencyData(pre_bins);
+          const post_bins = new Float32Array(post_viz.get(msg.tabId).frequencyBinCount);
+          post_viz.get(msg.tabId).getFloatFrequencyData(post_bins);
+          
           if (popupPort) {
             popupPort.postMessage({
               type: "visualizer-data",
-              data: { pre: Array.from(pre_bins), post: Array.from(post_bins) }
+              data: { 
+                pre: Array.from(pre_bins), 
+                post: Array.from(post_bins),
+                minDecibels: pre_viz.get(msg.tabId).minDecibels,
+                maxDecibels: pre_viz.get(msg.tabId).maxDecibels
+              }
             });
           } else {
             console.log("[ERROR] issue enviando mensaje")
