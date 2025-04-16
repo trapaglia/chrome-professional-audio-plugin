@@ -17,6 +17,18 @@ document.getElementById("agregar-filtro").addEventListener("click", () => {
     guardarFiltros();
 });
 
+// Función para convertir valor del slider (0-100) a frecuencia (20-20000 Hz) en escala logarítmica
+function sliderToFreq(sliderValue) {
+    // Convertir el valor del slider (0-100) a un valor en escala logarítmica entre 20Hz y 20kHz
+    return Math.round(20 * Math.pow(10, sliderValue / 100 * 3)); // 10^3 = 1000, así que el rango es 20Hz a 20kHz
+}
+
+// Función para convertir frecuencia (20-20000 Hz) a valor del slider (0-100) en escala logarítmica
+function freqToSlider(freq) {
+    // Convertir la frecuencia a un valor de slider (0-100)
+    return Math.round((Math.log10(freq / 20) / 3) * 100);
+}
+
 function crearFiltroCard(filtro) {
     const contenedor = document.createElement("div");
     contenedor.className = "filtro-card";
@@ -31,29 +43,22 @@ function crearFiltroCard(filtro) {
             </label>
             <button class="eliminar" style="background: #ffdcdc; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer;">×</button>
         </div>
-        <label>Frecuencia (Hz) <span class="freq-value">1000</span>
-        <input type="range" min="20" max="20000" step="10" value="1000" class="freq" style="width: 100%;">
+        <label>Frecuencia (Hz) <span class="freq-value">${filtro.freq}</span>
+        <input type="range" min="0" max="100" step="1" value="${freqToSlider(filtro.freq)}" class="freq" style="width: 100%;">
         </label>
-        <label>Q <span class="q-value">5</span>
-        <input type="range" min="0.1" max="10" step="0.1" value="5" class="q" style="width: 100%;">
+        <label>Q <span class="q-value">${filtro.q}</span>
+        <input type="range" min="0.1" max="10" step="0.1" value="${filtro.q}" class="q" style="width: 100%;">
         </label>
-        <label>Ganancia (dB) <span class="gain-value">0</span>
-        <input type="range" min="-30" max="30" step="1" value="0" class="gain" style="width: 100%;">
+        <label>Ganancia (dB) <span class="gain-value">${filtro.gain}</span>
+        <input type="range" min="-30" max="30" step="1" value="${filtro.gain}" class="gain" style="width: 100%;">
         </label>
     `;
 
-    // Actualizar los valores iniciales
-    contenedor.querySelector(".freq").value = filtro.freq;
-    contenedor.querySelector(".freq-value").textContent = filtro.freq;
-    contenedor.querySelector(".q").value = filtro.q;
-    contenedor.querySelector(".q-value").textContent = filtro.q;
-    contenedor.querySelector(".gain").value = filtro.gain;
-    contenedor.querySelector(".gain-value").textContent = filtro.gain;
-
     const freqSlider = contenedor.querySelector(".freq");
     freqSlider.addEventListener("input", (e) => {
-        contenedor.querySelector(".freq-value").textContent = e.target.value;
-        filtro.freq = parseFloat(e.target.value);
+        const frecuencia = sliderToFreq(parseFloat(e.target.value));
+        contenedor.querySelector(".freq-value").textContent = frecuencia;
+        filtro.freq = frecuencia;
         enviarActualizacion(filtro);
         guardarFiltros();
         updateFrequencyMarker(filtro.freq);
