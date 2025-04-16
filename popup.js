@@ -290,24 +290,24 @@ function drawVisualizer(data) {
   ctx.shadowOffsetY = 0;
 
   // 💜 Pre-EQ: violeta vivo con glow
-  ctx.shadowColor = "rgba(190, 90, 255, 0.6)";
+  ctx.shadowColor = "rgba(190, 90, 255, 0.4)"
   for (let i = 0; i < Math.min(barPositions.length, preData.length); i++) {
     const barHeight = normalizeDb(preData[i]) * canvas.height;
     const x = barPositions[i];
     const width = Math.max(1, barWidths[i] * 0.9); // Asegurar un mínimo de 1px
     
-    ctx.fillStyle = "rgba(190, 90, 255, 0.5)";
+    ctx.fillStyle = "rgba(190, 90, 255, 0.3)";
     ctx.fillRect(x, canvas.height - barHeight, width, barHeight);
   }
 
   // 💚 Post-EQ: verde neón claro con glow
-  ctx.shadowColor = "rgba(50, 220, 120, 0.6)";
+  ctx.shadowColor = "rgba(50, 220, 120, 0.4)";
   for (let i = 0; i < Math.min(barPositions.length, postData.length); i++) {
     const barHeight = normalizeDb(postData[i]) * canvas.height;
     const x = barPositions[i];
     const width = Math.max(1, barWidths[i] * 0.9); // Asegurar un mínimo de 1px
     
-    ctx.fillStyle = "rgba(50, 220, 120, 0.6)";
+    ctx.fillStyle = "rgba(50, 220, 120, 0.3)";
     ctx.fillRect(x, canvas.height - barHeight, width, barHeight);
   }
 
