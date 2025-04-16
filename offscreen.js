@@ -35,16 +35,23 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       }
       filtro = filtrosDinamicos.get(msg.tabId).get(msg.filtroId);
       if (!filtro) {
-        filtro = context.createBiquadFilter();
-        filtro.type = "peaking";
-        source.connect(filtro);
-        filtro.connect(context.destination);
+        filtro = {
+          node: context.createBiquadFilter(),
+          bypass: msg.bypass || false
+        };
+        filtro.node.type = "peaking";
+        source.connect(filtro.node);
+        filtro.node.connect(context.destination);
         filtrosDinamicos.get(msg.tabId).set(msg.filtroId, filtro);
+      } else {
+        // Actualizar el estado de bypass
+        filtro.bypass = msg.bypass;
       }
 
-      filtro.frequency.value = msg.freq;
-      filtro.Q.value = msg.q;
-      filtro.gain.value = msg.gain;
+      filtro.node.frequency.value = msg.freq;
+      filtro.node.Q.value = msg.q;
+      filtro.node.gain.value = filtro.bypass ? 0 : msg.gain; // Si está en bypass, la ganancia es 0
+      console.log(`[INFO] Filtro ${msg.filtroId} actualizado: freq=${msg.freq}, Q=${msg.q}, gain=${msg.gain}, bypass=${msg.bypass}`);
       reconectarCadena(msg.tabId);
       break;
     case "eliminar-filtro-dinamico":
@@ -55,10 +62,10 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       
       filtro = filtrosDinamicos.get(msg.tabId).get(msg.filtroId);
       if (filtro) {
-        filtro.disconnect();
+        filtro.node.disconnect();
         filtrosDinamicos.get(msg.tabId).delete(msg.filtroId);
         reconectarCadena(msg.tabId);
-      } 
+      }
       break;
     default:
       break;
@@ -248,7 +255,7 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       if (filtrosDinamicos.get(msg.tabId).size > 0) {
         const f = Array.from(filtrosDinamicos.get(msg.tabId).values());
         f.forEach((filtro) => {
-          filtro.disconnect();
+          filtro.node.disconnect();
         });
       }
 
@@ -313,32 +320,58 @@ function setupEQ(context, msg) {
 
 
   // 🔗 Conectar filtros en cadena
-  pre_viz.get(tabId).connect(filters.get("sub"));
+  pre_viz.get(msg.tabId).connect(filters.get("sub"));
   filters.get("sub").connect(filters.get("bass"));
   filters.get("bass").connect(filters.get("lowMid"));
   filters.get("lowMid").connect(filters.get("mid"));
   filters.get("mid").connect(filters.get("highMid"));
   filters.get("highMid").connect(filters.get("high"));
   filters.get("high").connect(filters.get("air"));
-  filters.get("air").connect(post_viz.get(tabId));
+  filters.get("air").connect(post_viz.get(msg.tabId));
 
 }
 
 function reconectarCadena(tabId) {
-  if (!medias.has(tabId)) return;
-
-  const volume = sources.get(tabId + "_volume");
-
-  let anterior = volume;
-
-  for (const filtro of Array.from(filtrosDinamicos.get(tabId).values())) {
-    anterior.disconnect?.();
-    anterior.connect(filtro);
-    anterior = filtro;
+  if (!contexts.has(tabId) || !sources.has(tabId)) {
+    console.log("[ERROR] No hay contexto o fuente para reconectar");
+    return;
   }
 
-  anterior.disconnect?.();
-  anterior.connect(post_viz.get(tabId));
+  const context = contexts.get(tabId);
+  const source = sources.get(tabId);
+  const volumeNode = sources.get(tabId + "_volume");
+
+  // Desconectar todos los nodos
+  source.disconnect();
+  if (volumeNode) volumeNode.disconnect();
+
+  // Reconectar la cadena básica
+  source.connect(pre_viz.get(tabId));
+  pre_viz.get(tabId).connect(volumeNode);
+  
+  // Reconectar los filtros dinámicos que no están en bypass
+  if (filtrosDinamicos.has(tabId)) {
+    const filtros = filtrosDinamicos.get(tabId);
+    filtros.forEach((filtro, id) => {
+      // Desconectar el filtro primero
+      filtro.node.disconnect();
+      
+      if (!filtro.bypass) {
+        // Si no está en bypass, conectarlo en la cadena
+        source.connect(filtro.node);
+        filtro.node.connect(volumeNode);
+        console.log(`[INFO] Filtro ${id} conectado (no está en bypass)`);
+      } else {
+        console.log(`[INFO] Filtro ${id} en bypass - no conectado`);
+      }
+    });
+  }
+  
+  // Finalizar la cadena
+  volumeNode.connect(post_viz.get(tabId));
+  post_viz.get(tabId).connect(context.destination);
+  
+  console.log("[INFO] Cadena de audio reconectada");
 }
 
 function clearAllData() {

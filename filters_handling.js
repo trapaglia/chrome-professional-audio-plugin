@@ -8,7 +8,8 @@ document.getElementById("agregar-filtro").addEventListener("click", () => {
       id,
       freq: 1000,
       q: 5,
-      gain: 0
+      gain: 0,
+      bypass: false
     };
     crearFiltroCard(filtro);
     filtrosActivos.push(filtro);
@@ -23,6 +24,13 @@ function crearFiltroCard(filtro) {
     contenedor.setAttribute("data-id", filtro.id);
 
     contenedor.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <label class="bypass-container" style="display: flex; align-items: center; margin: 0;">
+                <input type="checkbox" class="bypass-checkbox" ${filtro.bypass ? 'checked' : ''}>
+                <span style="margin-left: 5px; font-size: 0.85em;">Bypass</span>
+            </label>
+            <button class="eliminar" style="background: #ffdcdc; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer;">×</button>
+        </div>
         <label>Frecuencia (Hz) <span class="freq-value">1000</span>
         <input type="range" min="20" max="20000" step="10" value="1000" class="freq" style="width: 100%;">
         </label>
@@ -32,8 +40,15 @@ function crearFiltroCard(filtro) {
         <label>Ganancia (dB) <span class="gain-value">0</span>
         <input type="range" min="-30" max="30" step="1" value="0" class="gain" style="width: 100%;">
         </label>
-        <button class="eliminar" style="position: absolute; top: 8px; right: 8px; background: #ffdcdc; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer;">×</button>
     `;
+
+    // Actualizar los valores iniciales
+    contenedor.querySelector(".freq").value = filtro.freq;
+    contenedor.querySelector(".freq-value").textContent = filtro.freq;
+    contenedor.querySelector(".q").value = filtro.q;
+    contenedor.querySelector(".q-value").textContent = filtro.q;
+    contenedor.querySelector(".gain").value = filtro.gain;
+    contenedor.querySelector(".gain-value").textContent = filtro.gain;
 
     const freqSlider = contenedor.querySelector(".freq");
     freqSlider.addEventListener("input", (e) => {
@@ -80,6 +95,13 @@ function crearFiltroCard(filtro) {
         guardarFiltros();
     });
 
+    // Agregar evento para el checkbox de bypass
+    contenedor.querySelector(".bypass-checkbox").addEventListener("change", (e) => {
+        filtro.bypass = e.target.checked;
+        enviarActualizacion(filtro);
+        guardarFiltros();
+    });
+
     contenedor.querySelector(".eliminar").addEventListener("click", async () => {
         contenedor.remove();
         filtrosActivos = filtrosActivos.filter(f => f.id !== filtro.id);
@@ -106,6 +128,7 @@ async function enviarActualizacion(filtro) {
       freq: filtro.freq,
       q: filtro.q,
       gain: filtro.gain,
+      bypass: filtro.bypass,
       tabId: await getActiveTabId()
     });
   }
@@ -119,8 +142,12 @@ export function cargarFiltros() {
         if (Array.isArray(data.filtrosDinamicos)) {
             filtrosActivos = data.filtrosDinamicos;
             filtrosActivos.forEach(filtro => {
-            crearFiltroCard(filtro);
-            enviarActualizacion(filtro);
+                // Asegurarse de que el filtro tenga la propiedad bypass
+                if (filtro.bypass === undefined) {
+                    filtro.bypass = false;
+                }
+                crearFiltroCard(filtro);
+                enviarActualizacion(filtro);
             });
         }
     });
