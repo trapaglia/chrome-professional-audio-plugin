@@ -43,6 +43,7 @@ chrome.runtime.onMessage.addListener(async (msg) => {
         source.connect(filtro.node);
         filtro.node.connect(context.destination);
         filtrosDinamicos.get(msg.tabId).set(msg.filtroId, filtro);
+        reconectarCadena(msg.tabId);
       } else {
         // Actualizar el estado de bypass
         filtro.bypass = msg.bypass;
@@ -52,7 +53,6 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       filtro.node.Q.value = msg.q;
       filtro.node.gain.value = filtro.bypass ? 0 : msg.gain; // Si está en bypass, la ganancia es 0
       console.log(`[INFO] Filtro ${msg.filtroId} actualizado: freq=${msg.freq}, Q=${msg.q}, gain=${msg.gain}, bypass=${msg.bypass}`);
-      reconectarCadena(msg.tabId);
       break;
     case "eliminar-filtro-dinamico":
       if (!filtrosDinamicos.has(msg.tabId)) {
@@ -351,31 +351,57 @@ function reconectarCadena(tabId) {
   // Desconectar todos los nodos
   source.disconnect();
   if (volumeNode) volumeNode.disconnect();
-
-  // Reconectar la cadena básica
-  source.connect(pre_viz.get(tabId));
-  pre_viz.get(tabId).connect(volumeNode);
   
-  // Reconectar los filtros dinámicos que no están en bypass
+  if (pre_viz.has(tabId)) pre_viz.get(tabId).disconnect();
+  if (post_viz.has(tabId)) post_viz.get(tabId).disconnect();
+  
+  // Desconectar todos los filtros
   if (filtrosDinamicos.has(tabId)) {
-    const filtros = filtrosDinamicos.get(tabId);
-    filtros.forEach((filtro, id) => {
-      // Desconectar el filtro primero
+    filtrosDinamicos.get(tabId).forEach((filtro) => {
       filtro.node.disconnect();
-      
+    });
+  }
+
+  // Comenzar la cadena con la fuente conectada al pre-visualizador
+  source.connect(pre_viz.get(tabId));
+  
+  // Crear un array con los filtros activos (no en bypass)
+  const filtrosActivos = [];
+  if (filtrosDinamicos.has(tabId)) {
+    filtrosDinamicos.get(tabId).forEach((filtro, id) => {
       if (!filtro.bypass) {
-        // Si no está en bypass, conectarlo en la cadena
-        source.connect(filtro.node);
-        filtro.node.connect(volumeNode);
-        console.log(`[INFO] Filtro ${id} conectado (no está en bypass)`);
+        filtrosActivos.push(filtro.node);
+        console.log(`[INFO] Filtro ${id} añadido a la cadena (no está en bypass)`);
       } else {
         console.log(`[INFO] Filtro ${id} en bypass - no conectado`);
       }
     });
   }
   
-  // Finalizar la cadena
-  volumeNode.connect(post_viz.get(tabId));
+  // Si no hay filtros activos, conectar directamente pre_viz -> volumeNode -> post_viz
+  if (filtrosActivos.length === 0) {
+    pre_viz.get(tabId).connect(volumeNode);
+    volumeNode.connect(post_viz.get(tabId));
+    console.log("[INFO] No hay filtros activos, cadena directa");
+  } else {
+    // Conectar los filtros en serie
+    pre_viz.get(tabId).connect(filtrosActivos[0]);
+    
+    // Conectar cada filtro al siguiente
+    for (let i = 0; i < filtrosActivos.length - 1; i++) {
+      filtrosActivos[i].connect(filtrosActivos[i + 1]);
+    }
+    
+    // Conectar el último filtro al nodo de volumen
+    filtrosActivos[filtrosActivos.length - 1].connect(volumeNode);
+    
+    // Conectar el nodo de volumen al post-visualizador
+    volumeNode.connect(post_viz.get(tabId));
+    
+    console.log(`[INFO] Cadena conectada con ${filtrosActivos.length} filtros en serie`);
+  }
+  
+  // Finalizar la cadena conectando el post-visualizador a la salida
   post_viz.get(tabId).connect(context.destination);
   
   console.log("[INFO] Cadena de audio reconectada");
