@@ -9,15 +9,31 @@ const staticFiltering = false;
 let debug_counter = 1;
 let activeFrequencyMarker = null;
 let activeQMarker = null;
+// Variables para el compresor
+let compresorActivo = false;
+let compresorParams = {
+  threshold: -24,
+  ratio: 4,
+  knee: 30,
+  attack: 0.003,
+  release: 0.25
+};
 
 // Guardar y restaurar estado de los 8 sliders + estado de audio
-
 function guardarEstado() {
   const keys = ["volumen"];
   if (staticFiltering) keys.push(...filters);
   const estado = { 
     capturingAudio: capturingAudio,
-    darkMode: document.body.classList.contains('dark-mode')
+    darkMode: document.body.classList.contains('dark-mode'),
+    compresor: {
+      activo: document.getElementById('compresor-activo').checked,
+      threshold: parseFloat(document.getElementById('threshold').value),
+      ratio: parseFloat(document.getElementById('ratio').value),
+      knee: parseFloat(document.getElementById('knee').value),
+      attack: parseFloat(document.getElementById('attack').value),
+      release: parseFloat(document.getElementById('release').value)
+    }
   };
   keys.forEach((key) => {
     estado[key] = parseFloat(document.getElementById(key)?.value);
@@ -120,7 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log("entre isActive")
       if (!tab.url.startsWith("http")) {
         console.log("ALERT")
-        alert("[popup] No se puede capturar esta pestaña. Abrí una página web con audio 😊");
+        alert("[popup] No se puede capturar esta pestaña. Abrí una página web con audio ");
         return;
       }
       const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId });
@@ -215,6 +231,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       guardarEstado();
     });
   });
+
+  // Inicializar controles del compresor
+  inicializarCompresor();
+  
+  // Cargar el estado guardado
+  cargarEstado();
 });
 
 export async function getActiveTabId() {
@@ -420,7 +442,7 @@ function drawVisualizer(data) {
     ctx.stroke();
   }
 
-  // 💚 Post-EQ: verde neón claro con glow
+  // Post-EQ: verde neón claro con glow
   ctx.shadowColor = "rgba(50, 220, 120, 0.4)";
   ctx.strokeStyle = "rgba(50, 220, 120, 0.8)";
   ctx.fillStyle = "rgba(50, 220, 120, 0.3)";
@@ -474,7 +496,7 @@ function drawVisualizer(data) {
     ctx.font = "12px Arial";
     ctx.fillText(`${activeFrequencyMarker} Hz`, x + 5, 15);
     
-    // 🔔 Dibujar la campana de Q si tenemos tanto frecuencia como Q
+    // Dibujar la campana de Q si tenemos tanto frecuencia como Q
     if (activeQMarker) {
       // Dibujar la campana
       ctx.beginPath();
@@ -601,4 +623,172 @@ async function openOffscreenPort () {
     estado.textContent = "Error al conectar al offscreen";
     console.error("[POPUP] Error al conectar al offscreen:", error);
   }
+}
+
+// Función para inicializar los controles del compresor
+function inicializarCompresor() {
+  const compresorActivoCheckbox = document.getElementById('compresor-activo');
+  const threshold = document.getElementById('threshold');
+  const ratio = document.getElementById('ratio');
+  const knee = document.getElementById('knee');
+  const attack = document.getElementById('attack');
+  const release = document.getElementById('release');
+  
+  // Actualizar valores mostrados
+  actualizarValorCompresor('threshold', threshold.value);
+  actualizarValorCompresor('ratio', ratio.value);
+  actualizarValorCompresor('knee', knee.value);
+  actualizarValorCompresor('attack', attack.value);
+  actualizarValorCompresor('release', release.value);
+  
+  // Event listeners para cambios en los controles
+  compresorActivoCheckbox.addEventListener('change', async function() {
+    compresorActivo = this.checked;
+    await enviarConfiguracionCompresor();
+    guardarEstado();
+  });
+  
+  threshold.addEventListener('input', async function() {
+    actualizarValorCompresor('threshold', this.value);
+    compresorParams.threshold = parseFloat(this.value);
+    await enviarConfiguracionCompresor();
+    guardarEstado();
+  });
+  
+  ratio.addEventListener('input', async function() {
+    actualizarValorCompresor('ratio', this.value);
+    compresorParams.ratio = parseFloat(this.value);
+    await enviarConfiguracionCompresor();
+    guardarEstado();
+  });
+  
+  knee.addEventListener('input', async function() {
+    actualizarValorCompresor('knee', this.value);
+    compresorParams.knee = parseFloat(this.value);
+    await enviarConfiguracionCompresor();
+    guardarEstado();
+  });
+  
+  attack.addEventListener('input', async function() {
+    actualizarValorCompresor('attack', this.value);
+    compresorParams.attack = parseFloat(this.value);
+    await enviarConfiguracionCompresor();
+    guardarEstado();
+  });
+  
+  release.addEventListener('input', async function() {
+    actualizarValorCompresor('release', this.value);
+    compresorParams.release = parseFloat(this.value);
+    await enviarConfiguracionCompresor();
+    guardarEstado();
+  });
+}
+
+// Función para actualizar los valores mostrados del compresor
+function actualizarValorCompresor(tipo, valor) {
+  const valorElement = document.getElementById(`${tipo}-value`);
+  
+  switch(tipo) {
+    case 'threshold':
+      valorElement.textContent = `${valor} dB`;
+      break;
+    case 'ratio':
+      valorElement.textContent = `${valor}:1`;
+      break;
+    case 'knee':
+      valorElement.textContent = `${valor} dB`;
+      break;
+    case 'attack':
+      // Convertir a milisegundos para mejor legibilidad
+      const attackMs = (parseFloat(valor) * 1000).toFixed(0);
+      valorElement.textContent = `${attackMs} ms`;
+      break;
+    case 'release':
+      // Convertir a milisegundos para mejor legibilidad
+      const releaseMs = (parseFloat(valor) * 1000).toFixed(0);
+      valorElement.textContent = `${releaseMs} ms`;
+      break;
+  }
+}
+
+// Función para enviar la configuración del compresor al script offscreen
+async function enviarConfiguracionCompresor() {
+  if (capturingAudio) {
+    const tabId = await getActiveTabId();
+    chrome.runtime.sendMessage({
+      type: "ajustar-compresor",
+      target: "offscreen",
+      tabId,
+      activo: compresorActivo,
+      params: {
+        threshold: compresorParams.threshold,
+        ratio: compresorParams.ratio,
+        knee: compresorParams.knee,
+        attack: compresorParams.attack,
+        release: compresorParams.release
+      }
+    });
+  }
+}
+
+// Función para cargar el estado guardado
+function cargarEstado() {
+  chrome.storage.local.get("estado", function(data) {
+    if (data.estado) {
+      const estado = data.estado;
+      
+      // Cargar volumen
+      if (estado.volumen !== undefined) {
+        document.getElementById("volumen").value = estado.volumen;
+        document.getElementById("volumen-value").textContent = `${estado.volumen} dB`;
+      }
+      
+      // Cargar modo oscuro
+      if (estado.darkMode !== undefined) {
+        if (estado.darkMode) {
+          document.body.classList.add('dark-mode');
+          document.getElementById('dark-mode').checked = true;
+        } else {
+          document.body.classList.remove('dark-mode');
+          document.getElementById('dark-mode').checked = false;
+        }
+      }
+      
+      // Cargar configuración del compresor
+      if (estado.compresor) {
+        document.getElementById('compresor-activo').checked = estado.compresor.activo;
+        compresorActivo = estado.compresor.activo;
+        
+        if (estado.compresor.threshold !== undefined) {
+          document.getElementById('threshold').value = estado.compresor.threshold;
+          compresorParams.threshold = estado.compresor.threshold;
+          actualizarValorCompresor('threshold', estado.compresor.threshold);
+        }
+        
+        if (estado.compresor.ratio !== undefined) {
+          document.getElementById('ratio').value = estado.compresor.ratio;
+          compresorParams.ratio = estado.compresor.ratio;
+          actualizarValorCompresor('ratio', estado.compresor.ratio);
+        }
+        
+        if (estado.compresor.knee !== undefined) {
+          document.getElementById('knee').value = estado.compresor.knee;
+          compresorParams.knee = estado.compresor.knee;
+          actualizarValorCompresor('knee', estado.compresor.knee);
+        }
+        
+        if (estado.compresor.attack !== undefined) {
+          document.getElementById('attack').value = estado.compresor.attack;
+          compresorParams.attack = estado.compresor.attack;
+          actualizarValorCompresor('attack', estado.compresor.attack);
+        }
+        
+        if (estado.compresor.release !== undefined) {
+          document.getElementById('release').value = estado.compresor.release;
+          compresorParams.release = estado.compresor.release;
+          actualizarValorCompresor('release', estado.compresor.release);
+        }
+      }
+    }
+  });
 }

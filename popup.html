@@ -21,6 +21,39 @@
     <label> Volumen <span id="volumen-value">0 dB</span>
     <input type="range" id="volumen" min="-30" max="30" value="0" style="width: 100%;"></label>
 
+    <!-- Sección de Compresor -->
+    <div id="compresor-container" style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0;">Compresor</h3>
+        <label style="display: flex; align-items: center;">
+          <input type="checkbox" id="compresor-activo" name="compresor-activo" value="true">
+          <span style="margin-left: 5px;">Activar</span>
+        </label>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: auto 1fr auto; grid-gap: 5px 10px; align-items: center;">
+        <label for="threshold">Threshold:</label>
+        <input type="range" id="threshold" min="-60" max="0" value="-24" step="1" style="width: 100%;">
+        <span id="threshold-value">-24 dB</span>
+        
+        <label for="ratio">Ratio:</label>
+        <input type="range" id="ratio" min="1" max="20" value="4" step="0.5" style="width: 100%;">
+        <span id="ratio-value">4:1</span>
+        
+        <label for="knee">Knee:</label>
+        <input type="range" id="knee" min="0" max="40" value="30" step="1" style="width: 100%;">
+        <span id="knee-value">30 dB</span>
+        
+        <label for="attack">Attack:</label>
+        <input type="range" id="attack" min="0" max="1" value="0.003" step="0.001" style="width: 100%;">
+        <span id="attack-value">3 ms</span>
+        
+        <label for="release">Release:</label>
+        <input type="range" id="release" min="0" max="1" value="0.25" step="0.01" style="width: 100%;">
+        <span id="release-value">250 ms</span>
+      </div>
+    </div>
+
     <div id="filtros-container" style="display: flex; flex-direction: column; gap: 6px; margin: 10px auto; width: 100%; max-width: 380px;"></div>
 
     <button id="agregar-filtro">+ Agregar Filtro</button>

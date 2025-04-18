@@ -7,6 +7,8 @@ let loops = new Map();
 const pre_viz = new Map();
 const post_viz = new Map();
 const staticFilters = new Map();
+const compressors = new Map(); // Nodos de compresor
+const compressorStates = new Map(); // Estado de activación del compresor
 // const bandas_filtros = ["sub", "bass", "lowMid", "mid", "highMid", "high", "air"];
 const staticFiltering = false;
 let offscreenInitialized = false;
@@ -66,6 +68,37 @@ chrome.runtime.onMessage.addListener(async (msg) => {
         filtrosDinamicos.get(msg.tabId).delete(msg.filtroId);
         reconectarCadena(msg.tabId);
       }
+      break;
+    case "ajustar-compresor":
+      if (!contexts.has(msg.tabId)) {
+        console.error("[offscreen] AudioContext no inicializado");
+        return;
+      }
+      
+      // Si el compresor no existe, crearlo
+      if (!compressors.has(msg.tabId)) {
+        const context = contexts.get(msg.tabId);
+        const compressor = context.createDynamicsCompressor();
+        compressors.set(msg.tabId, compressor);
+      }
+      
+      // Guardar el estado de activación
+      compressorStates.set(msg.tabId, msg.activo);
+      
+      // Actualizar parámetros del compresor
+      const compressor = compressors.get(msg.tabId);
+      if (msg.params) {
+        if (msg.params.threshold !== undefined) compressor.threshold.value = msg.params.threshold;
+        if (msg.params.ratio !== undefined) compressor.ratio.value = msg.params.ratio;
+        if (msg.params.knee !== undefined) compressor.knee.value = msg.params.knee;
+        if (msg.params.attack !== undefined) compressor.attack.value = msg.params.attack;
+        if (msg.params.release !== undefined) compressor.release.value = msg.params.release;
+      }
+      
+      // Reconectar la cadena de audio para aplicar los cambios
+      reconectarCadena(msg.tabId);
+      
+      console.log(`[INFO] Compresor ${msg.activo ? 'activado' : 'desactivado'} para la pestaña ${msg.tabId}`, msg.params);
       break;
     default:
       break;
@@ -190,6 +223,16 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     if (staticFiltering)
       setupEQ(context, msg);
 
+    // Crear nodo de compresor
+    const compressor = context.createDynamicsCompressor();
+    compressor.threshold.value = -24;
+    compressor.ratio.value = 4;
+    compressor.knee.value = 30;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.25;
+    compressors.set(msg.tabId, compressor);
+    compressorStates.set(msg.tabId, false); // Inicialmente desactivado
+
     if (popupPort) {
       popupPort.postMessage({ type: "start-stream" });
     }
@@ -288,6 +331,11 @@ chrome.runtime.onMessage.addListener(async (msg) => {
         });
       }
 
+      // Desconectar el compresor si existe
+      if (compressors.has(msg.tabId)) {
+        compressors.get(msg.tabId).disconnect();
+      }
+
       const volume = sources.get(msg.tabId + "_volume");
       if (volume) {
         volume.disconnect();
@@ -383,6 +431,11 @@ function reconectarCadena(tabId) {
       filtro.node.disconnect();
     });
   }
+  
+  // Desconectar el compresor si existe
+  if (compressors.has(tabId)) {
+    compressors.get(tabId).disconnect();
+  }
 
   // Comenzar la cadena con la fuente conectada al volumen, que luego se conecta al pre-visualizador
   source.connect(volumeNode);
@@ -401,12 +454,24 @@ function reconectarCadena(tabId) {
     });
   }
   
-  // Si no hay filtros activos, conectar directamente volumeNode -> pre_viz -> post_viz
+  // Verificar si el compresor está activo
+  const compresorActivo = compressorStates.get(tabId) || false;
+  
+  // Si no hay filtros activos
   if (filtrosActivos.length === 0) {
-    pre_viz.get(tabId).connect(post_viz.get(tabId));
-    console.log("[INFO] No hay filtros activos, cadena directa");
+    if (compresorActivo && compressors.has(tabId)) {
+      // Conectar pre_viz -> compresor -> post_viz
+      pre_viz.get(tabId).connect(compressors.get(tabId));
+      compressors.get(tabId).connect(post_viz.get(tabId));
+      console.log("[INFO] No hay filtros activos, conectando a través del compresor");
+    } else {
+      // Conectar pre_viz -> post_viz (sin compresor)
+      pre_viz.get(tabId).connect(post_viz.get(tabId));
+      console.log("[INFO] No hay filtros activos ni compresor activo, cadena directa");
+    }
   } else {
-    // Conectar los filtros en serie
+    // Hay filtros activos
+    // Conectar pre_viz al primer filtro
     pre_viz.get(tabId).connect(filtrosActivos[0]);
     
     // Conectar cada filtro al siguiente
@@ -414,10 +479,19 @@ function reconectarCadena(tabId) {
       filtrosActivos[i].connect(filtrosActivos[i + 1]);
     }
     
-    // Conectar el último filtro al post-visualizador
-    filtrosActivos[filtrosActivos.length - 1].connect(post_viz.get(tabId));
+    // Último nodo de la cadena de filtros
+    const ultimoFiltro = filtrosActivos[filtrosActivos.length - 1];
     
-    console.log(`[INFO] Cadena conectada con ${filtrosActivos.length} filtros en serie`);
+    if (compresorActivo && compressors.has(tabId)) {
+      // Conectar último filtro -> compresor -> post_viz
+      ultimoFiltro.connect(compressors.get(tabId));
+      compressors.get(tabId).connect(post_viz.get(tabId));
+      console.log(`[INFO] Cadena conectada con ${filtrosActivos.length} filtros y compresor activo`);
+    } else {
+      // Conectar último filtro -> post_viz (sin compresor)
+      ultimoFiltro.connect(post_viz.get(tabId));
+      console.log(`[INFO] Cadena conectada con ${filtrosActivos.length} filtros sin compresor`);
+    }
   }
   
   // Finalizar la cadena conectando el post-visualizador a la salida
@@ -456,6 +530,8 @@ function clearAllData() {
   pre_viz.clear();
   post_viz.clear();
   staticFilters.clear();
+  compressors.clear();
+  compressorStates.clear();
   
   console.log("[INFO] Todas las estructuras de datos del offscreen han sido limpiadas");
 }
