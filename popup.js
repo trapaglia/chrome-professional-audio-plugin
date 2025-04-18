@@ -231,9 +231,12 @@ function drawVisualizer(data) {
   const ctx = canvas.getContext("2d");
   const bufferLength = preData.length;
 
-  // 🌞 Fondo claro y limpio
+  // Detectar si el modo oscuro está activo
+  const isDarkMode = document.body.classList.contains('dark-mode');
+  
+  // Fondo adaptado al tema actual
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#fefefe"; // blanco suave
+  ctx.fillStyle = isDarkMode ? "#121212" : "#fefefe"; // Oscuro o claro según el tema
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Función para normalizar valores de dB a altura de barra (0-1)
