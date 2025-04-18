@@ -251,11 +251,20 @@ function drawVisualizer(data) {
   ctx.fillStyle = isDarkMode ? "#aaaaaa" : "#aaa";
   ctx.font = "10px Arial";
   const freqLabels = [30, 60, 120, 250, 500, 1000, 2000, 4000, 8000, 17000];
-  freqLabels.forEach(freq => {
+  freqLabels.forEach((freq, index) => {
     // Convertir frecuencia a posición X usando escala de octavas
     const octave = Math.log2(freq / 20); // Número de octavas desde 20Hz
     const totalOctaves = Math.log2(17000 / 20); // Aproximadamente 9.7 octavas (hasta 17kHz)
-    const x = (octave / totalOctaves) * canvas.width; // Usar el valor exacto de octavas
+    
+    // Ajustar posición X para alinear con las etiquetas HTML
+    let x = (octave / totalOctaves) * canvas.width;
+    
+    // Aplicar offset a todas las líneas excepto la última (17kHz)
+    if (index < freqLabels.length - 1) {
+      // Aplicar un offset progresivo: mayor para las frecuencias bajas, menor para las altas
+      const offsetFactor = 1 - (index / (freqLabels.length - 1));
+      x += 10 * offsetFactor;
+    }
     
     // Dibujar línea vertical
     ctx.strokeStyle = isDarkMode ? "#333333" : "#ddd";
