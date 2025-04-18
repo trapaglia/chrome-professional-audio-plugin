@@ -5,6 +5,7 @@ const sources = new Map();
 let popupPort = null;
 let loops = new Map();
 const pre_viz = new Map();
+const mid_viz = new Map(); // Nuevo analizador para visualizar antes del compresor
 const post_viz = new Map();
 const staticFilters = new Map();
 const compressors = new Map(); // Nodos de compresor
@@ -126,10 +127,11 @@ chrome.runtime.onConnect.addListener((port) => {
           }
           break;
         case "give-me-viz":
-          if (!pre_viz.has(msg.tabId) || !post_viz.has(msg.tabId)) {
-            console.log("[ERROR] pre_viz o post_viz no inicializados");
+          if (!pre_viz.has(msg.tabId) || !mid_viz.has(msg.tabId) || !post_viz.has(msg.tabId)) {
+            console.log("[ERROR] pre_viz, mid_viz o post_viz no inicializados");
             console.log("[ERROR] tabId: " + msg.tabId);
             console.log("[ERROR] pre_viz: " + pre_viz);
+            console.log("[ERROR] mid_viz: " + mid_viz);
             console.log("[ERROR] post_viz: " + post_viz);
             alert("[offscreen] No se puede capturar el audio en este momento. Intenta recargar la página");
             return;
@@ -137,6 +139,10 @@ chrome.runtime.onConnect.addListener((port) => {
           // Usar Float32Array para obtener valores en dB
           const pre_bins = new Float32Array(pre_viz.get(msg.tabId).frequencyBinCount);
           pre_viz.get(msg.tabId).getFloatFrequencyData(pre_bins);
+          
+          const mid_bins = new Float32Array(mid_viz.get(msg.tabId).frequencyBinCount);
+          mid_viz.get(msg.tabId).getFloatFrequencyData(mid_bins);
+          
           const post_bins = new Float32Array(post_viz.get(msg.tabId).frequencyBinCount);
           post_viz.get(msg.tabId).getFloatFrequencyData(post_bins);
           
@@ -145,6 +151,7 @@ chrome.runtime.onConnect.addListener((port) => {
               type: "visualizer-data",
               data: { 
                 pre: Array.from(pre_bins), 
+                mid: Array.from(mid_bins),
                 post: Array.from(post_bins),
                 minDecibels: pre_viz.get(msg.tabId).minDecibels,
                 maxDecibels: pre_viz.get(msg.tabId).maxDecibels
@@ -206,6 +213,14 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     volume.gain.value = msg.level;
     sources.set(msg.tabId + "_volume", volume);
 
+    // Crear analizador intermedio (antes del compresor)
+    mid_viz.set(msg.tabId, new AnalyserNode(context, {
+      fftSize: 2048,
+      maxDecibels: -25,
+      minDecibels: -100,
+      smoothingTimeConstant: 0.4,
+    }));
+
     post_viz.set(msg.tabId, new AnalyserNode(context, {
       fftSize: 2048,
       maxDecibels: -25,
@@ -214,7 +229,8 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     }));
     source.connect(volume);
     volume.connect(pre_viz.get(msg.tabId));
-    pre_viz.get(msg.tabId).connect(post_viz.get(msg.tabId));
+    pre_viz.get(msg.tabId).connect(mid_viz.get(msg.tabId));
+    mid_viz.get(msg.tabId).connect(post_viz.get(msg.tabId));
     post_viz.get(msg.tabId).connect(context.destination);
     console.log("[INFO] AudioContext inicializado")
     console.log("[INFO] MediaStreamSource inicializado")
@@ -404,7 +420,7 @@ function setupEQ(context, msg) {
   filters.get("mid").connect(filters.get("highMid"));
   filters.get("highMid").connect(filters.get("high"));
   filters.get("high").connect(filters.get("air"));
-  filters.get("air").connect(post_viz.get(msg.tabId));
+  filters.get("air").connect(mid_viz.get(msg.tabId));
 
 }
 
@@ -423,6 +439,7 @@ function reconectarCadena(tabId) {
   if (volumeNode) volumeNode.disconnect();
   
   if (pre_viz.has(tabId)) pre_viz.get(tabId).disconnect();
+  if (mid_viz.has(tabId)) mid_viz.get(tabId).disconnect();
   if (post_viz.has(tabId)) post_viz.get(tabId).disconnect();
   
   // Desconectar todos los filtros
@@ -460,13 +477,15 @@ function reconectarCadena(tabId) {
   // Si no hay filtros activos
   if (filtrosActivos.length === 0) {
     if (compresorActivo && compressors.has(tabId)) {
-      // Conectar pre_viz -> compresor -> post_viz
-      pre_viz.get(tabId).connect(compressors.get(tabId));
+      // Conectar pre_viz -> mid_viz -> compresor -> post_viz
+      pre_viz.get(tabId).connect(mid_viz.get(tabId));
+      mid_viz.get(tabId).connect(compressors.get(tabId));
       compressors.get(tabId).connect(post_viz.get(tabId));
       console.log("[INFO] No hay filtros activos, conectando a través del compresor");
     } else {
-      // Conectar pre_viz -> post_viz (sin compresor)
-      pre_viz.get(tabId).connect(post_viz.get(tabId));
+      // Conectar pre_viz -> mid_viz -> post_viz (sin compresor)
+      pre_viz.get(tabId).connect(mid_viz.get(tabId));
+      mid_viz.get(tabId).connect(post_viz.get(tabId));
       console.log("[INFO] No hay filtros activos ni compresor activo, cadena directa");
     }
   } else {
@@ -482,14 +501,17 @@ function reconectarCadena(tabId) {
     // Último nodo de la cadena de filtros
     const ultimoFiltro = filtrosActivos[filtrosActivos.length - 1];
     
+    // Conectar el último filtro al mid_viz
+    ultimoFiltro.connect(mid_viz.get(tabId));
+    
     if (compresorActivo && compressors.has(tabId)) {
-      // Conectar último filtro -> compresor -> post_viz
-      ultimoFiltro.connect(compressors.get(tabId));
+      // Conectar mid_viz -> compresor -> post_viz
+      mid_viz.get(tabId).connect(compressors.get(tabId));
       compressors.get(tabId).connect(post_viz.get(tabId));
       console.log(`[INFO] Cadena conectada con ${filtrosActivos.length} filtros y compresor activo`);
     } else {
-      // Conectar último filtro -> post_viz (sin compresor)
-      ultimoFiltro.connect(post_viz.get(tabId));
+      // Conectar mid_viz -> post_viz (sin compresor)
+      mid_viz.get(tabId).connect(post_viz.get(tabId));
       console.log(`[INFO] Cadena conectada con ${filtrosActivos.length} filtros sin compresor`);
     }
   }
@@ -528,6 +550,7 @@ function clearAllData() {
   sources.clear();
   loops.clear();
   pre_viz.clear();
+  mid_viz.clear(); // Limpiar el nuevo analizador
   post_viz.clear();
   staticFilters.clear();
   compressors.clear();

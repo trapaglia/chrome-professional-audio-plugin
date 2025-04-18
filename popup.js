@@ -246,6 +246,7 @@ export async function getActiveTabId() {
 
 function drawVisualizer(data) {
   const preData = data["pre"];
+  const midData = data["mid"]; 
   const postData = data["post"];
   const minDecibels = data["minDecibels"] || -100;
   const maxDecibels = data["maxDecibels"] || -25;
@@ -275,15 +276,12 @@ function drawVisualizer(data) {
   const freqLabels = [30, 60, 120, 250, 500, 1000, 2000, 4000, 8000, 17000];
   freqLabels.forEach((freq, index) => {
     // Convertir frecuencia a posición X usando escala de octavas
-    const octave = Math.log2(freq / 20); // Número de octavas desde 20Hz
-    const totalOctaves = Math.log2(17000 / 20); // Aproximadamente 9.7 octavas (hasta 17kHz)
-    
-    // Ajustar posición X para alinear con las etiquetas HTML
+    const octave = Math.log2(freq / 20); 
+    const totalOctaves = Math.log2(17000 / 20); 
     let x = (octave / totalOctaves) * canvas.width;
     
     // Aplicar offset a todas las líneas excepto la última (17kHz)
     if (index < freqLabels.length - 1) {
-      // Aplicar un offset progresivo: mayor para las frecuencias bajas, menor para las altas
       const offsetFactor = 1 - (index / (freqLabels.length - 1));
       x += 10 * offsetFactor;
     }
@@ -320,6 +318,7 @@ function drawVisualizer(data) {
 
   // Calcular posiciones de puntos en escala de octavas
   const prePoints = [];
+  const midPoints = []; 
   const postPoints = [];
   
   // Crear posiciones de puntos en escala de octavas
@@ -348,6 +347,12 @@ function drawVisualizer(data) {
     if (i < preData.length) {
       const y = canvas.height - (normalizeDb(preData[i]) * canvas.height);
       prePoints.push({ x, y });
+    }
+    
+    // Nuevo: almacenar puntos para el visualizador intermedio
+    if (i < midData.length) {
+      const y = canvas.height - (normalizeDb(midData[i]) * canvas.height);
+      midPoints.push({ x, y });
     }
     
     if (i < postData.length) {
@@ -403,14 +408,15 @@ function drawVisualizer(data) {
   
   // Aplicar suavizado a los puntos
   const smoothedPrePoints = smoothPoints(prePoints, 7);
+  const smoothedMidPoints = smoothPoints(midPoints, 7); 
   const smoothedPostPoints = smoothPoints(postPoints, 7);
   
-  // ✨ Efecto glow
+  // Efecto glow
   ctx.shadowBlur = 10;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 0;
 
-  // 💜 Pre-EQ: violeta vivo con glow
+  // Pre-EQ: violeta vivo con glow
   ctx.shadowColor = "rgba(190, 90, 255, 0.4)";
   ctx.strokeStyle = "rgba(190, 90, 255, 0.8)";
   ctx.fillStyle = "rgba(190, 90, 255, 0.3)";
@@ -418,7 +424,7 @@ function drawVisualizer(data) {
   
   // Dibujar línea para pre-EQ
   ctx.beginPath();
-  ctx.moveTo(0, canvas.height); // Empezar desde la esquina inferior izquierda
+  ctx.moveTo(0, canvas.height); 
   
   // Dibujar la línea que une los puntos
   smoothedPrePoints.forEach(point => {
@@ -438,6 +444,37 @@ function drawVisualizer(data) {
     ctx.moveTo(smoothedPrePoints[0].x, smoothedPrePoints[0].y);
     for (let i = 1; i < smoothedPrePoints.length; i++) {
       ctx.lineTo(smoothedPrePoints[i].x, smoothedPrePoints[i].y);
+    }
+    ctx.stroke();
+  }
+
+  // Nuevo: Mid-EQ (después de filtros, antes de compresor): amarillo/naranja con glow
+  ctx.shadowColor = "rgba(255, 180, 50, 0.4)";
+  ctx.strokeStyle = "rgba(255, 180, 50, 0.8)";
+  ctx.fillStyle = "rgba(255, 180, 50, 0.3)";
+  
+  // Dibujar línea para mid-EQ
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height); 
+  
+  // Dibujar la línea que une los puntos
+  smoothedMidPoints.forEach(point => {
+    ctx.lineTo(point.x, point.y);
+  });
+  
+  // Cerrar el path hasta la base
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.closePath();
+  
+  // Rellenar el área bajo la curva
+  ctx.fill();
+  
+  // Dibujar la línea del contorno
+  ctx.beginPath();
+  if (smoothedMidPoints.length > 0) {
+    ctx.moveTo(smoothedMidPoints[0].x, smoothedMidPoints[0].y);
+    for (let i = 1; i < smoothedMidPoints.length; i++) {
+      ctx.lineTo(smoothedMidPoints[i].x, smoothedMidPoints[i].y);
     }
     ctx.stroke();
   }
@@ -473,9 +510,31 @@ function drawVisualizer(data) {
     ctx.stroke();
   }
 
-  // 🧽 Limpiar efectos
+  // Limpiar efectos
   ctx.shadowBlur = 0;
   ctx.shadowColor = "transparent";
+
+  // Agregar leyenda para los colores
+  const legendY = 20;
+  const legendSpacing = 120;
+  
+  // Leyenda para Pre-EQ (violeta)
+  ctx.fillStyle = "rgba(190, 90, 255, 0.8)";
+  ctx.fillRect(10, legendY - 10, 10, 10);
+  ctx.fillStyle = isDarkMode ? "#e0e0e0" : "#333";
+  ctx.fillText("Pre-EQ", 25, legendY);
+  
+  // Leyenda para Mid-EQ (amarillo/naranja)
+  ctx.fillStyle = "rgba(255, 180, 50, 0.8)";
+  ctx.fillRect(10 + legendSpacing, legendY - 10, 10, 10);
+  ctx.fillStyle = isDarkMode ? "#e0e0e0" : "#333";
+  ctx.fillText("Post-Filtros", 25 + legendSpacing, legendY);
+  
+  // Leyenda para Post-EQ (verde)
+  ctx.fillStyle = "rgba(50, 220, 120, 0.8)";
+  ctx.fillRect(10 + legendSpacing * 2, legendY - 10, 10, 10);
+  ctx.fillStyle = isDarkMode ? "#e0e0e0" : "#333";
+  ctx.fillText("Post-Compresor", 25 + legendSpacing * 2, legendY);
 
   // Dibujar el marcador de frecuencia activa si existe
   if (activeFrequencyMarker) {
