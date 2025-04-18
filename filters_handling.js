@@ -39,22 +39,32 @@ function crearFiltroCard(filtro) {
     contenedor.setAttribute("data-id", filtro.id);
 
     contenedor.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
             <label class="bypass-container" style="display: flex; align-items: center; margin: 0;">
                 <input type="checkbox" class="bypass-checkbox" ${filtro.bypass ? 'checked' : ''}>
                 <span style="margin-left: 5px; font-size: 0.85em;">Bypass</span>
             </label>
-            <button class="eliminar" style="background: #ffdcdc; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer;">×</button>
+            <button class="eliminar" style="background: #ffdcdc; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; cursor: pointer; font-size: 14px;">×</button>
         </div>
-        <label>Frecuencia (Hz) <span class="freq-value">${filtro.freq}</span>
-        <input type="range" min="0" max="100" step="1" value="${freqToSlider(filtro.freq)}" class="freq" style="width: 100%;">
-        </label>
-        <label>Q <span class="q-value">${filtro.q}</span>
-        <input type="range" min="0.1" max="10" step="0.1" value="${filtro.q}" class="q" style="width: 100%;">
-        </label>
-        <label>Ganancia (dB) <span class="gain-value">${filtro.gain}</span>
-        <input type="range" min="-30" max="30" step="1" value="${filtro.gain}" class="gain" style="width: 100%;">
-        </label>
+        <div style="display: grid; grid-template-columns: auto 1fr; grid-gap: 2px 8px; align-items: center; font-size: 0.9em;">
+            <div>Freq (Hz)</div>
+            <div style="display: flex; align-items: center;">
+                <input type="range" min="0" max="100" step="1" value="${freqToSlider(filtro.freq)}" class="freq" style="flex: 1; margin: 0 5px 0 0;">
+                <span class="freq-value" style="min-width: 40px; text-align: right;">${filtro.freq}</span>
+            </div>
+            
+            <div>Q</div>
+            <div style="display: flex; align-items: center;">
+                <input type="range" min="0.1" max="10" step="0.1" value="${filtro.q}" class="q" style="flex: 1; margin: 0 5px 0 0;">
+                <span class="q-value" style="min-width: 40px; text-align: right;">${filtro.q}</span>
+            </div>
+            
+            <div>Gain (dB)</div>
+            <div style="display: flex; align-items: center;">
+                <input type="range" min="-30" max="30" step="1" value="${filtro.gain}" class="gain" style="flex: 1; margin: 0 5px 0 0;">
+                <span class="gain-value" style="min-width: 40px; text-align: right;">${filtro.gain}</span>
+            </div>
+        </div>
     `;
 
     const freqSlider = contenedor.querySelector(".freq");
