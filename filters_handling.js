@@ -35,16 +35,25 @@ function freqToSlider(freq) {
 function crearFiltroCard(filtro) {
     const contenedor = document.createElement("div");
     contenedor.className = "filtro-card";
-    contenedor.style = "padding: 7px; background: #f5f5ff; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 6px; position: relative;";
     contenedor.setAttribute("data-id", filtro.id);
 
+    // Verificar si el modo oscuro está activo
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    const bgColor = isDarkMode ? "#2a2a2a" : "#f5f5ff";
+    const textColor = isDarkMode ? "#e0e0e0" : "#333";
+    const buttonBgColor = isDarkMode ? "#4a2a2a" : "#ffdcdc";
+    const buttonTextColor = isDarkMode ? "#e0e0e0" : "#333";
+    
+    // Actualizar el estilo con los colores apropiados
+    contenedor.style = `padding: 7px; background: ${bgColor}; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 6px; position: relative; color: ${textColor};`;
+    
     contenedor.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
             <label class="bypass-container" style="display: flex; align-items: center; margin: 0;">
                 <input type="checkbox" class="bypass-checkbox" ${filtro.bypass ? 'checked' : ''}>
                 <span style="margin-left: 5px; font-size: 0.85em;">Bypass</span>
             </label>
-            <button class="eliminar" style="background: #ffdcdc; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; cursor: pointer; font-size: 14px;">×</button>
+            <button class="eliminar" style="background: ${buttonBgColor}; color: ${buttonTextColor}; border: none; border-radius: 50%; width: 20px; height: 20px; font-weight: bold; cursor: pointer; font-size: 14px;">×</button>
         </div>
         <div style="display: grid; grid-template-columns: auto 1fr; grid-gap: 2px 8px; align-items: center; font-size: 0.9em;">
             <div>Freq (Hz)</div>
@@ -169,6 +178,36 @@ export function cargarFiltros() {
             });
         }
     });
+    observarCambiosTema();
+}
+
+// Función para actualizar los filtros cuando cambia el tema
+function actualizarEstiloFiltros() {
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    const filtroCards = document.querySelectorAll('.filtro-card');
+    
+    filtroCards.forEach(card => {
+        const bgColor = isDarkMode ? "#2a2a2a" : "#f5f5ff";
+        const textColor = isDarkMode ? "#e0e0e0" : "#333";
+        
+        card.style.background = bgColor;
+        card.style.color = textColor;
+        
+        const eliminarBtn = card.querySelector('.eliminar');
+        if (eliminarBtn) {
+            eliminarBtn.style.background = isDarkMode ? "#4a2a2a" : "#ffdcdc";
+            eliminarBtn.style.color = isDarkMode ? "#e0e0e0" : "#333";
+        }
+    });
+}
+
+// Observar cambios en el tema
+function observarCambiosTema() {
+    // Añadir event listener al checkbox de modo oscuro
+    const darkModeCheckbox = document.getElementById('dark-mode');
+    if (darkModeCheckbox) {
+        darkModeCheckbox.addEventListener('change', actualizarEstiloFiltros);
+    }
 }
 
 // to do: 

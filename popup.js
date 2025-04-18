@@ -15,17 +15,27 @@ let activeQMarker = null;
 function guardarEstado() {
   const keys = ["volumen"];
   if (staticFiltering) keys.push(...filters);
-  const estado = { capturingAudio: capturingAudio };
+  const estado = { 
+    capturingAudio: capturingAudio,
+    darkMode: document.body.classList.contains('dark-mode')
+  };
   keys.forEach((key) => {
     estado[key] = parseFloat(document.getElementById(key)?.value);
   });
   chrome.storage.local.set(estado);
 }
 
-chrome.storage.local.get(["volumen", ...filters, "capturingAudio"], (data) => {
+chrome.storage.local.get(["volumen", ...filters, "capturingAudio", "darkMode"], (data) => {
   Object.entries(data).forEach(([key, value]) => {
-    const el = document.getElementById(key);
-    if (el) el.value = value;
+    if (key === "darkMode") {
+      if (value) {
+        document.body.classList.add('dark-mode');
+        document.getElementById('dark-mode').checked = true;
+      }
+    } else {
+      const el = document.getElementById(key);
+      if (el) el.value = value;
+    }
   });
 
   if (data.capturingAudio) {
@@ -153,6 +163,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       loops = null;
     }
 
+    guardarEstado();
+  });
+
+  // Agregar evento para el checkbox de modo oscuro
+  document.getElementById("dark-mode").addEventListener("change", (e) => {
+    if (e.target.checked) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
     guardarEstado();
   });
 
