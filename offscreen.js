@@ -193,6 +193,27 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     if (popupPort) {
       popupPort.postMessage({ type: "start-stream" });
     }
+
+    const newFiltros = new Map();
+    if (filtrosDinamicos.has(msg.tabId) && filtrosDinamicos.get(msg.tabId).size > 0) {
+      const f = Array.from(filtrosDinamicos.get(msg.tabId).values());
+      f.forEach((filtro) => {
+        filtro.node.disconnect();
+        const newFiltro = {
+          node: context.createBiquadFilter(),
+          bypass: filtro.bypass
+        };
+        newFiltro.node.type = filtro.node.type;
+        newFiltro.node.frequency.value = filtro.node.frequency.value;
+        newFiltro.node.Q.value = filtro.node.Q.value;
+        newFiltro.node.gain.value = filtro.node.gain.value;
+        newFiltros.set(filtro.id, newFiltro);
+        filtrosDinamicos.get(msg.tabId).delete(filtro.id);
+      });
+    }
+    filtrosDinamicos.set(msg.tabId, newFiltros);
+    console.log("[INFO] Filtros dinámicos inicializados");
+    reconectarCadena(msg.tabId);
   }
 
   if (msg.type === "ajustar-volumen") {
@@ -259,10 +280,11 @@ chrome.runtime.onMessage.addListener(async (msg) => {
         });
       }
 
-      if (filtrosDinamicos.get(msg.tabId).size > 0) {
+      if (filtrosDinamicos.has(msg.tabId) && filtrosDinamicos.get(msg.tabId).size > 0) {
         const f = Array.from(filtrosDinamicos.get(msg.tabId).values());
         f.forEach((filtro) => {
           filtro.node.disconnect();
+          // filtrosDinamicos.get(msg.tabId).delete(filtro.id);
         });
       }
 
