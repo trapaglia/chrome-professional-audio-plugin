@@ -261,13 +261,12 @@ function drawVisualizer(data) {
     ctx.fillText(`${db} dB`, 5, y + 12);
   });
 
-  // Calcular ancho de barra para escala de octavas
-  const barWidths = [];
-  const barPositions = [];
+  // Calcular posiciones de puntos en escala de octavas
+  const prePoints = [];
+  const postPoints = [];
   
-  // Crear posiciones de barras en escala de octavas
+  // Crear posiciones de puntos en escala de octavas
   for (let i = 0; i < bufferLength; i++) {
-    // Convertir índice a frecuencia (aproximadamente)
     // Calculamos la frecuencia correspondiente a cada bin de la FFT
     // La FFT divide el rango de frecuencias en partes iguales (lineales)
     // Pero queremos visualizarlas en escala de octavas
@@ -286,43 +285,85 @@ function drawVisualizer(data) {
     // Convertir frecuencia a posición X usando escala de octavas
     const octave = Math.log2(linearFreq / 20); // Número de octavas desde 20Hz
     const x = (octave / 10) * canvas.width; // 10 octavas cubren el rango de 20Hz a 20kHz
-    barPositions.push(x);
+    
+    // Almacenar puntos con sus valores de amplitud
+    if (i < preData.length) {
+      const y = canvas.height - (normalizeDb(preData[i]) * canvas.height);
+      prePoints.push({ x, y });
+    }
+    
+    if (i < postData.length) {
+      const y = canvas.height - (normalizeDb(postData[i]) * canvas.height);
+      postPoints.push({ x, y });
+    }
   }
   
-  // Calcular anchos de barras
-  for (let i = 0; i < barPositions.length - 1; i++) {
-    barWidths.push(barPositions[i+1] - barPositions[i] - 1);
-  }
-  // Añadir el último ancho
-  if (barPositions.length > 0) {
-    barWidths.push(barWidths[barWidths.length - 1]);
-  }
-
   // ✨ Efecto glow
   ctx.shadowBlur = 10;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 0;
 
   // 💜 Pre-EQ: violeta vivo con glow
-  ctx.shadowColor = "rgba(190, 90, 255, 0.4)"
-  for (let i = 0; i < Math.min(barPositions.length, preData.length); i++) {
-    const barHeight = normalizeDb(preData[i]) * canvas.height;
-    const x = barPositions[i];
-    const width = Math.max(1, barWidths[i] * 0.9); // Asegurar un mínimo de 1px
-    
-    ctx.fillStyle = "rgba(190, 90, 255, 0.3)";
-    ctx.fillRect(x, canvas.height - barHeight, width, barHeight);
+  ctx.shadowColor = "rgba(190, 90, 255, 0.4)";
+  ctx.strokeStyle = "rgba(190, 90, 255, 0.8)";
+  ctx.fillStyle = "rgba(190, 90, 255, 0.3)";
+  ctx.lineWidth = 2;
+  
+  // Dibujar línea para pre-EQ
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height); // Empezar desde la esquina inferior izquierda
+  
+  // Dibujar la línea que une los puntos
+  prePoints.forEach(point => {
+    ctx.lineTo(point.x, point.y);
+  });
+  
+  // Cerrar el path hasta la base
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.closePath();
+  
+  // Rellenar el área bajo la curva
+  ctx.fill();
+  
+  // Dibujar la línea del contorno
+  ctx.beginPath();
+  if (prePoints.length > 0) {
+    ctx.moveTo(prePoints[0].x, prePoints[0].y);
+    for (let i = 1; i < prePoints.length; i++) {
+      ctx.lineTo(prePoints[i].x, prePoints[i].y);
+    }
+    ctx.stroke();
   }
 
   // 💚 Post-EQ: verde neón claro con glow
   ctx.shadowColor = "rgba(50, 220, 120, 0.4)";
-  for (let i = 0; i < Math.min(barPositions.length, postData.length); i++) {
-    const barHeight = normalizeDb(postData[i]) * canvas.height;
-    const x = barPositions[i];
-    const width = Math.max(1, barWidths[i] * 0.9); // Asegurar un mínimo de 1px
-    
-    ctx.fillStyle = "rgba(50, 220, 120, 0.3)";
-    ctx.fillRect(x, canvas.height - barHeight, width, barHeight);
+  ctx.strokeStyle = "rgba(50, 220, 120, 0.8)";
+  ctx.fillStyle = "rgba(50, 220, 120, 0.3)";
+  
+  // Dibujar línea para post-EQ
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height); // Empezar desde la esquina inferior izquierda
+  
+  // Dibujar la línea que une los puntos
+  postPoints.forEach(point => {
+    ctx.lineTo(point.x, point.y);
+  });
+  
+  // Cerrar el path hasta la base
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.closePath();
+  
+  // Rellenar el área bajo la curva
+  ctx.fill();
+  
+  // Dibujar la línea del contorno
+  ctx.beginPath();
+  if (postPoints.length > 0) {
+    ctx.moveTo(postPoints[0].x, postPoints[0].y);
+    for (let i = 1; i < postPoints.length; i++) {
+      ctx.lineTo(postPoints[i].x, postPoints[i].y);
+    }
+    ctx.stroke();
   }
 
   // 🧽 Limpiar efectos
