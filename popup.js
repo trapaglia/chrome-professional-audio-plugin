@@ -250,11 +250,12 @@ function drawVisualizer(data) {
   // Dibujar escala de frecuencia logarítmica
   ctx.fillStyle = isDarkMode ? "#aaaaaa" : "#aaa";
   ctx.font = "10px Arial";
-  const freqLabels = [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 20000];
+  const freqLabels = [30, 60, 120, 250, 500, 1000, 2000, 4000, 8000, 17000];
   freqLabels.forEach(freq => {
     // Convertir frecuencia a posición X usando escala de octavas
     const octave = Math.log2(freq / 20); // Número de octavas desde 20Hz
-    const x = (octave / 10) * canvas.width; // 10 octavas cubren el rango de 20Hz a 20kHz
+    const totalOctaves = Math.log2(17000 / 20); // Aproximadamente 9.7 octavas (hasta 17kHz)
+    const x = (octave / totalOctaves) * canvas.width; // Usar el valor exacto de octavas
     
     // Dibujar línea vertical
     ctx.strokeStyle = isDarkMode ? "#333333" : "#ddd";
@@ -301,15 +302,16 @@ function drawVisualizer(data) {
     // Frecuencia lineal correspondiente al bin i de la FFT
     const linearFreq = freqRatio * nyquistFreq;
     
-    // Solo procesamos hasta 20kHz (límite audible)
-    if (linearFreq > 20000) break;
+    // Solo procesamos hasta 17kHz
+    if (linearFreq > 17000) break;
     
     // Solo incluimos frecuencias desde 20Hz
     if (linearFreq < 20) continue;
     
     // Convertir frecuencia a posición X usando escala de octavas
     const octave = Math.log2(linearFreq / 20); // Número de octavas desde 20Hz
-    const x = (octave / 10) * canvas.width; // 10 octavas cubren el rango de 20Hz a 20kHz
+    const totalOctaves = Math.log2(17000 / 20); // Aproximadamente 9.7 octavas (hasta 17kHz)
+    const x = (octave / totalOctaves) * canvas.width * 0.995; // Usar el valor exacto de octavas
     
     // Almacenar puntos con sus valores de amplitud
     if (i < preData.length) {
@@ -448,7 +450,8 @@ function drawVisualizer(data) {
   if (activeFrequencyMarker) {
     // Convertir frecuencia a posición X usando escala de octavas
     const octave = Math.log2(activeFrequencyMarker / 20); // Número de octavas desde 20Hz
-    const x = (octave / 10) * canvas.width; // 10 octavas cubren el rango de 20Hz a 20kHz
+    const totalOctaves = Math.log2(17000 / 20); // Aproximadamente 9.7 octavas (hasta 17kHz)
+    const x = (octave / totalOctaves) * canvas.width * 0.995; // Usar el valor exacto de octavas
     
     ctx.lineWidth = 2;
     ctx.strokeStyle = "#ff3366"; // Color llamativo para el marcador
@@ -486,7 +489,7 @@ function drawVisualizer(data) {
         const pointX = centerX + i;
         if (pointX >= 0 && pointX <= canvas.width) {
           // Convertir posición X a frecuencia
-          const freq = 20 * Math.pow(10, (pointX / canvas.width) * Math.log10(20000 / 20));
+          const freq = 20 * Math.pow(10, (pointX / canvas.width) * Math.log10(17000 / 20));
           const freqRatio = freq / activeFrequencyMarker;
           
           // Fórmula de campana para filtro peaking en escala logarítmica
