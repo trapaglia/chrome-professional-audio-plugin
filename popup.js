@@ -31,7 +31,7 @@ chrome.storage.local.get(["volumen", ...filters, "capturingAudio"], (data) => {
   if (data.capturingAudio) {
     capturingAudio = true;
     if (boton==null) boton = document.getElementById("activar");
-    boton.textContent = "Detener Audio 🔇";
+    boton.textContent = "Detener Audio 🔇🔇";
   }
 });
 
@@ -227,7 +227,7 @@ function drawVisualizer(data) {
   // Dibujar escala de frecuencia logarítmica
   ctx.fillStyle = "#aaa";
   ctx.font = "10px Arial";
-  const freqLabels = [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768];
+  const freqLabels = [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 20000];
   freqLabels.forEach(freq => {
     // Convertir frecuencia a posición X usando escala de octavas
     const octave = Math.log2(freq / 20); // Número de octavas desde 20Hz
@@ -242,6 +242,7 @@ function drawVisualizer(data) {
     ctx.stroke();
     
     // Dibujar etiqueta
+    ctx.fillStyle = "#333";
     ctx.fillText(freq >= 1000 ? `${freq/1000}k` : freq, x - 10, canvas.height - 5);
   });
 
@@ -258,6 +259,7 @@ function drawVisualizer(data) {
     ctx.stroke();
     
     // Dibujar etiqueta
+    ctx.fillStyle = "#333";
     ctx.fillText(`${db} dB`, 5, y + 12);
   });
 
