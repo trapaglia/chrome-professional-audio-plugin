@@ -300,6 +300,54 @@ function drawVisualizer(data) {
     }
   }
   
+  // Aplicar suavizado a los puntos (promedio móvil)
+  const smoothPoints = (points, windowSize) => {
+    if (points.length <= windowSize) return points;
+    
+    const smoothed = [];
+    
+    // Primer punto se mantiene igual
+    smoothed.push(points[0]);
+    
+    // Aplicar suavizado adaptativo: ventana más pequeña para bajas frecuencias, más grande para altas
+    for (let i = 1; i < points.length - 1; i++) {
+      // Calcular tamaño de ventana adaptativo basado en la posición x (frecuencia)
+      // Más suavizado en altas frecuencias (x más grande)
+      const adaptiveWindow = Math.min(
+        Math.max(
+          2, // Mínimo tamaño de ventana
+          Math.floor(windowSize * (points[i].x / canvas.width) * 2)
+        ), 
+        Math.min(windowSize, Math.floor(points.length / 4)) // Limitar tamaño máximo
+      );
+      
+      // Calcular índices para la ventana
+      const halfWindow = Math.floor(adaptiveWindow / 2);
+      const startIdx = Math.max(0, i - halfWindow);
+      const endIdx = Math.min(points.length - 1, i + halfWindow);
+      
+      // Calcular promedio de valores y en la ventana
+      let sumY = 0;
+      for (let j = startIdx; j <= endIdx; j++) {
+        sumY += points[j].y;
+      }
+      
+      const avgY = sumY / (endIdx - startIdx + 1);
+      smoothed.push({ x: points[i].x, y: avgY });
+    }
+    
+    // Último punto se mantiene igual
+    if (points.length > 1) {
+      smoothed.push(points[points.length - 1]);
+    }
+    
+    return smoothed;
+  };
+  
+  // Aplicar suavizado a los puntos
+  const smoothedPrePoints = smoothPoints(prePoints, 7);
+  const smoothedPostPoints = smoothPoints(postPoints, 7);
+  
   // ✨ Efecto glow
   ctx.shadowBlur = 10;
   ctx.shadowOffsetX = 0;
@@ -316,7 +364,7 @@ function drawVisualizer(data) {
   ctx.moveTo(0, canvas.height); // Empezar desde la esquina inferior izquierda
   
   // Dibujar la línea que une los puntos
-  prePoints.forEach(point => {
+  smoothedPrePoints.forEach(point => {
     ctx.lineTo(point.x, point.y);
   });
   
@@ -329,10 +377,10 @@ function drawVisualizer(data) {
   
   // Dibujar la línea del contorno
   ctx.beginPath();
-  if (prePoints.length > 0) {
-    ctx.moveTo(prePoints[0].x, prePoints[0].y);
-    for (let i = 1; i < prePoints.length; i++) {
-      ctx.lineTo(prePoints[i].x, prePoints[i].y);
+  if (smoothedPrePoints.length > 0) {
+    ctx.moveTo(smoothedPrePoints[0].x, smoothedPrePoints[0].y);
+    for (let i = 1; i < smoothedPrePoints.length; i++) {
+      ctx.lineTo(smoothedPrePoints[i].x, smoothedPrePoints[i].y);
     }
     ctx.stroke();
   }
@@ -347,7 +395,7 @@ function drawVisualizer(data) {
   ctx.moveTo(0, canvas.height); // Empezar desde la esquina inferior izquierda
   
   // Dibujar la línea que une los puntos
-  postPoints.forEach(point => {
+  smoothedPostPoints.forEach(point => {
     ctx.lineTo(point.x, point.y);
   });
   
@@ -360,10 +408,10 @@ function drawVisualizer(data) {
   
   // Dibujar la línea del contorno
   ctx.beginPath();
-  if (postPoints.length > 0) {
-    ctx.moveTo(postPoints[0].x, postPoints[0].y);
-    for (let i = 1; i < postPoints.length; i++) {
-      ctx.lineTo(postPoints[i].x, postPoints[i].y);
+  if (smoothedPostPoints.length > 0) {
+    ctx.moveTo(smoothedPostPoints[0].x, smoothedPostPoints[0].y);
+    for (let i = 1; i < smoothedPostPoints.length; i++) {
+      ctx.lineTo(smoothedPostPoints[i].x, smoothedPostPoints[i].y);
     }
     ctx.stroke();
   }
