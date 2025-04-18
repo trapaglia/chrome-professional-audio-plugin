@@ -10,7 +10,7 @@ let debug_counter = 1;
 let activeFrequencyMarker = null;
 let activeQMarker = null;
 
-// 🧠 Guardar y restaurar estado de los 8 sliders + estado de audio
+// Guardar y restaurar estado de los 8 sliders + estado de audio
 
 function guardarEstado() {
   const keys = ["volumen"];
@@ -248,7 +248,7 @@ function drawVisualizer(data) {
   };
 
   // Dibujar escala de frecuencia logarítmica
-  ctx.fillStyle = "#aaa";
+  ctx.fillStyle = isDarkMode ? "#aaaaaa" : "#aaa";
   ctx.font = "10px Arial";
   const freqLabels = [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 20000];
   freqLabels.forEach(freq => {
@@ -257,7 +257,7 @@ function drawVisualizer(data) {
     const x = (octave / 10) * canvas.width; // 10 octavas cubren el rango de 20Hz a 20kHz
     
     // Dibujar línea vertical
-    ctx.strokeStyle = "#ddd";
+    ctx.strokeStyle = isDarkMode ? "#333333" : "#ddd";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, 0);
@@ -265,7 +265,7 @@ function drawVisualizer(data) {
     ctx.stroke();
     
     // Dibujar etiqueta
-    ctx.fillStyle = "#333";
+    ctx.fillStyle = isDarkMode ? "#e0e0e0" : "#333";
     ctx.fillText(freq >= 1000 ? `${freq/1000}k` : freq, x - 10, canvas.height - 5);
   });
 
@@ -275,14 +275,14 @@ function drawVisualizer(data) {
     const y = canvas.height - (normalizeDb(db) * canvas.height);
     
     // Dibujar línea horizontal
-    ctx.strokeStyle = "#eee";
+    ctx.strokeStyle = isDarkMode ? "#333333" : "#eee";
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(canvas.width, y);
     ctx.stroke();
     
     // Dibujar etiqueta
-    ctx.fillStyle = "#333";
+    ctx.fillStyle = isDarkMode ? "#e0e0e0" : "#333";
     ctx.fillText(`${db} dB`, 5, y + 12);
   });
 
