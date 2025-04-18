@@ -179,9 +179,9 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       minDecibels: -100,
       smoothingTimeConstant: 0.4,
     }));
-    source.connect(pre_viz.get(msg.tabId));
-    pre_viz.get(msg.tabId).connect(volume);
-    volume.connect(post_viz.get(msg.tabId));
+    source.connect(volume);
+    volume.connect(pre_viz.get(msg.tabId));
+    pre_viz.get(msg.tabId).connect(post_viz.get(msg.tabId));
     post_viz.get(msg.tabId).connect(context.destination);
     console.log("[INFO] AudioContext inicializado")
     console.log("[INFO] MediaStreamSource inicializado")
@@ -362,8 +362,9 @@ function reconectarCadena(tabId) {
     });
   }
 
-  // Comenzar la cadena con la fuente conectada al pre-visualizador
-  source.connect(pre_viz.get(tabId));
+  // Comenzar la cadena con la fuente conectada al volumen, que luego se conecta al pre-visualizador
+  source.connect(volumeNode);
+  volumeNode.connect(pre_viz.get(tabId));
   
   // Crear un array con los filtros activos (no en bypass)
   const filtrosActivos = [];
@@ -378,10 +379,9 @@ function reconectarCadena(tabId) {
     });
   }
   
-  // Si no hay filtros activos, conectar directamente pre_viz -> volumeNode -> post_viz
+  // Si no hay filtros activos, conectar directamente volumeNode -> pre_viz -> post_viz
   if (filtrosActivos.length === 0) {
-    pre_viz.get(tabId).connect(volumeNode);
-    volumeNode.connect(post_viz.get(tabId));
+    pre_viz.get(tabId).connect(post_viz.get(tabId));
     console.log("[INFO] No hay filtros activos, cadena directa");
   } else {
     // Conectar los filtros en serie
@@ -392,11 +392,8 @@ function reconectarCadena(tabId) {
       filtrosActivos[i].connect(filtrosActivos[i + 1]);
     }
     
-    // Conectar el último filtro al nodo de volumen
-    filtrosActivos[filtrosActivos.length - 1].connect(volumeNode);
-    
-    // Conectar el nodo de volumen al post-visualizador
-    volumeNode.connect(post_viz.get(tabId));
+    // Conectar el último filtro al post-visualizador
+    filtrosActivos[filtrosActivos.length - 1].connect(post_viz.get(tabId));
     
     console.log(`[INFO] Cadena conectada con ${filtrosActivos.length} filtros en serie`);
   }
