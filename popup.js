@@ -31,7 +31,7 @@ chrome.storage.local.get(["volumen", ...filters, "capturingAudio"], (data) => {
   if (data.capturingAudio) {
     capturingAudio = true;
     if (boton==null) boton = document.getElementById("activar");
-    boton.textContent = "Detener Audio 🔇🔇";
+    boton.textContent = "Detener Audio 🔇";
   }
 });
 
@@ -316,9 +316,10 @@ function drawVisualizer(data) {
       const adaptiveWindow = Math.min(
         Math.max(
           2, // Mínimo tamaño de ventana
-          Math.floor(windowSize * (points[i].x / canvas.width) * 2)
+          // Math.floor(windowSize * (points[i].x / canvas.width) * 4)
+          Math.floor(windowSize * Math.pow((points[i].x / canvas.width), 2) * 3)
         ), 
-        Math.min(windowSize, Math.floor(points.length / 4)) // Limitar tamaño máximo
+        // Math.min(windowSize, Math.floor(points.length / 4)) // Limitar tamaño máximo
       );
       
       // Calcular índices para la ventana
