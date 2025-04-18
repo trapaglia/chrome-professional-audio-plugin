@@ -1,4 +1,7 @@
 import { getActiveTabId, updateFrequencyMarker, updateQMarker } from "./popup.js";
+const MIN_FREQ = 20;    // 20 Hz
+const MAX_FREQ = 20000; // 20 kHz
+const OCTAVE_RANGE = Math.log2(MAX_FREQ / MIN_FREQ); // Aproximadamente 10 octavas
 
 let filtrosActivos = [];
 
@@ -17,16 +20,16 @@ document.getElementById("agregar-filtro").addEventListener("click", () => {
     guardarFiltros();
 });
 
-// Función para convertir valor del slider (0-100) a frecuencia (20-20000 Hz) en escala logarítmica
+// Función para convertir valor del slider (0-100) a frecuencia (20-20000 Hz) en escala de octavas
 function sliderToFreq(sliderValue) {
-    // Convertir el valor del slider (0-100) a un valor en escala logarítmica entre 20Hz y 20kHz
-    return Math.round(20 * Math.pow(10, sliderValue / 100 * 3)); // 10^3 = 1000, así que el rango es 20Hz a 20kHz
+    // Convertir el valor del slider (0-100) a un valor en escala de octavas entre 20Hz y 20kHz
+    return Math.round(MIN_FREQ * Math.pow(2, (sliderValue / 100) * OCTAVE_RANGE));
 }
 
-// Función para convertir frecuencia (20-20000 Hz) a valor del slider (0-100) en escala logarítmica
+// Función para convertir frecuencia (20-20000 Hz) a valor del slider (0-100) en escala de octavas
 function freqToSlider(freq) {
-    // Convertir la frecuencia a un valor de slider (0-100)
-    return Math.round((Math.log10(freq / 20) / 3) * 100);
+    // Convertir la frecuencia a un valor de slider (0-100) usando escala de octavas
+    return Math.round((Math.log2(freq / MIN_FREQ) / OCTAVE_RANGE) * 100);
 }
 
 function crearFiltroCard(filtro) {

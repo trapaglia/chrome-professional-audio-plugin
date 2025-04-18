@@ -227,10 +227,11 @@ function drawVisualizer(data) {
   // Dibujar escala de frecuencia logarítmica
   ctx.fillStyle = "#aaa";
   ctx.font = "10px Arial";
-  const freqLabels = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+  const freqLabels = [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768];
   freqLabels.forEach(freq => {
-    // Convertir frecuencia a posición X usando escala logarítmica
-    const x = Math.log10(freq / 20) / Math.log10(20000 / 20) * canvas.width;
+    // Convertir frecuencia a posición X usando escala de octavas
+    const octave = Math.log2(freq / 20); // Número de octavas desde 20Hz
+    const x = (octave / 10) * canvas.width; // 10 octavas cubren el rango de 20Hz a 20kHz
     
     // Dibujar línea vertical
     ctx.strokeStyle = "#ddd";
@@ -260,18 +261,31 @@ function drawVisualizer(data) {
     ctx.fillText(`${db} dB`, 5, y + 12);
   });
 
-  // Calcular ancho de barra para escala logarítmica
+  // Calcular ancho de barra para escala de octavas
   const barWidths = [];
   const barPositions = [];
   
-  // Crear posiciones de barras en escala logarítmica
+  // Crear posiciones de barras en escala de octavas
   for (let i = 0; i < bufferLength; i++) {
     // Convertir índice a frecuencia (aproximadamente)
-    const freq = 20 * Math.pow(2, i / (bufferLength / 10));
-    if (freq > 20000) break; // Limitar a 20kHz
+    // Calculamos la frecuencia correspondiente a cada bin de la FFT
+    // La FFT divide el rango de frecuencias en partes iguales (lineales)
+    // Pero queremos visualizarlas en escala de octavas
+    const freqRatio = i / bufferLength; // Posición relativa en el array (0-1)
+    const nyquistFreq = 22050; // Frecuencia máxima representable (sampleRate/2)
     
-    // Convertir frecuencia a posición X
-    const x = Math.log10(freq / 20) / Math.log10(20000 / 20) * canvas.width;
+    // Frecuencia lineal correspondiente al bin i de la FFT
+    const linearFreq = freqRatio * nyquistFreq;
+    
+    // Solo procesamos hasta 20kHz (límite audible)
+    if (linearFreq > 20000) break;
+    
+    // Solo incluimos frecuencias desde 20Hz
+    if (linearFreq < 20) continue;
+    
+    // Convertir frecuencia a posición X usando escala de octavas
+    const octave = Math.log2(linearFreq / 20); // Número de octavas desde 20Hz
+    const x = (octave / 10) * canvas.width; // 10 octavas cubren el rango de 20Hz a 20kHz
     barPositions.push(x);
   }
   
@@ -317,8 +331,9 @@ function drawVisualizer(data) {
 
   // Dibujar el marcador de frecuencia activa si existe
   if (activeFrequencyMarker) {
-    // Convertir frecuencia a posición X usando escala logarítmica
-    const x = Math.log10(activeFrequencyMarker / 20) / Math.log10(20000 / 20) * canvas.width;
+    // Convertir frecuencia a posición X usando escala de octavas
+    const octave = Math.log2(activeFrequencyMarker / 20); // Número de octavas desde 20Hz
+    const x = (octave / 10) * canvas.width; // 10 octavas cubren el rango de 20Hz a 20kHz
     
     ctx.lineWidth = 2;
     ctx.strokeStyle = "#ff3366"; // Color llamativo para el marcador
