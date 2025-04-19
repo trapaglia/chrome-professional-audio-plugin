@@ -55,7 +55,6 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       filtro.node.frequency.value = msg.freq;
       filtro.node.Q.value = msg.q;
       filtro.node.gain.value = filtro.bypass ? 0 : msg.gain; // Si está en bypass, la ganancia es 0
-      console.log(`[INFO] Filtro ${msg.filtroId} actualizado: freq=${msg.freq}, Q=${msg.q}, gain=${msg.gain}, bypass=${msg.bypass}`);
       break;
     case "eliminar-filtro-dinamico":
       if (!filtrosDinamicos.has(msg.tabId)) {
@@ -99,7 +98,6 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       // Reconectar la cadena de audio para aplicar los cambios
       reconectarCadena(msg.tabId);
       
-      console.log(`[INFO] Compresor ${msg.activo ? 'activado' : 'desactivado'} para la pestaña ${msg.tabId}`, msg.params);
       break;
     default:
       break;
@@ -233,7 +231,6 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     mid_viz.get(msg.tabId).connect(post_viz.get(msg.tabId));
     post_viz.get(msg.tabId).connect(context.destination);
     console.log("[INFO] AudioContext inicializado")
-    console.log("[INFO] MediaStreamSource inicializado")
     // console.log("source:")
 
     if (staticFiltering)
@@ -283,7 +280,6 @@ chrome.runtime.onMessage.addListener(async (msg) => {
     
     const volumeNode = sources.get(msg.tabId + "_volume");
     if (volumeNode) {
-      console.log("[INFO] Ajustando volumen a " + msg.level);
       volumeNode.gain.value = msg.level;
     } else {
       console.log("[ERROR] No se encontró el nodo de volumen");
