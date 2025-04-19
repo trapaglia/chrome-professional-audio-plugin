@@ -54,6 +54,22 @@
       </div>
     </div>
 
+    <!-- Sección de Presets -->
+    <div style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+      <h3 style="margin: 0 0 10px 0;">Presets</h3>
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <input type="text" id="preset-name" placeholder="Nombre del preset" style="flex: 1; padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+        <button id="guardar-preset" style="background-color: #4CAF50; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Guardar</button>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <select id="preset-select" style="flex: 1; padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+          <option value="">Seleccionar preset...</option>
+        </select>
+        <button id="cargar-preset" style="background-color: #2196F3; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Cargar</button>
+        <button id="eliminar-preset" style="background-color: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Eliminar</button>
+      </div>
+    </div>
+
     <div id="filtros-container" style="display: flex; flex-direction: column; gap: 6px; margin: 10px auto; width: 100%; max-width: 380px;"></div>
 
     <button id="agregar-filtro">+ Agregar Filtro</button>
@@ -80,7 +96,7 @@
       <span style="margin-left: 5px;">2kHz</span>
       <span style="margin-left: 5px;">5kHz</span>
       <span style="margin-left: 5px;">10kHz</span>
-      <span style="margin-left: 4px;">17kHz</span>
+      <span style="margin-left: 1px;">17kHz</span>
     </div>
 
     <canvas id="visual" width="580" height="200"></canvas>

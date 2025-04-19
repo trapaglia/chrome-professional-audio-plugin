@@ -80,6 +80,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const estado = document.getElementById("estado");
   const debug = document.getElementById("debug");
 
+  // Inicializar los botones de presets
+  inicializarPresets();
+
   // Verificar si es la primera vez que se abre el popup desde la inicialización
   try {
     const response = await sendMessagePromise({
@@ -276,8 +279,8 @@ function drawVisualizer(data) {
   const freqLabels = [30, 60, 120, 250, 500, 1000, 2000, 4000, 8000, 17000];
   freqLabels.forEach((freq, index) => {
     // Convertir frecuencia a posición X usando escala de octavas
-    const octave = Math.log2(freq / 20); 
-    const totalOctaves = Math.log2(17000 / 20); 
+    const octave = Math.log2(freq / 20); // Número de octavas desde 20Hz
+    const totalOctaves = Math.log2(17000 / 20); // Aproximadamente 9.7 octavas (hasta 17kHz)
     let x = (octave / totalOctaves) * canvas.width;
     
     // Aplicar offset a todas las líneas excepto la última (17kHz)
@@ -682,6 +685,272 @@ async function openOffscreenPort () {
     estado.textContent = "Error al conectar al offscreen";
     console.error("[POPUP] Error al conectar al offscreen:", error);
   }
+}
+
+// Función para inicializar los controles de presets
+function inicializarPresets() {
+  const guardarPresetBtn = document.getElementById('guardar-preset');
+  const cargarPresetBtn = document.getElementById('cargar-preset');
+  const eliminarPresetBtn = document.getElementById('eliminar-preset');
+  const presetNameInput = document.getElementById('preset-name');
+  const presetSelect = document.getElementById('preset-select');
+
+  // Cargar presets existentes
+  cargarListaPresets();
+
+  // Evento para guardar preset
+  guardarPresetBtn.addEventListener('click', () => {
+    const nombrePreset = presetNameInput.value.trim();
+    if (nombrePreset === '') {
+      alert('Por favor, ingresa un nombre para el preset');
+      return;
+    }
+
+    // Obtener configuración actual
+    const configuracion = obtenerConfiguracionActual();
+    
+    // Guardar en storage
+    chrome.storage.local.get(['presets'], (result) => {
+      const presets = result.presets || {};
+      presets[nombrePreset] = configuracion;
+      
+      chrome.storage.local.set({ presets }, () => {
+        alert(`Preset "${nombrePreset}" guardado correctamente`);
+        presetNameInput.value = '';
+        cargarListaPresets();
+      });
+    });
+  });
+
+  // Evento para cargar preset
+  cargarPresetBtn.addEventListener('click', () => {
+    const nombrePreset = presetSelect.value;
+    if (nombrePreset === '') {
+      alert('Por favor, selecciona un preset para cargar');
+      return;
+    }
+
+    chrome.storage.local.get(['presets'], (result) => {
+      const presets = result.presets || {};
+      const configuracion = presets[nombrePreset];
+      
+      if (configuracion) {
+        aplicarConfiguracion(configuracion);
+        console.log("Preset cargado:", configuracion);
+        alert(`Preset "${nombrePreset}" cargado correctamente`);
+      } else {
+        alert(`Error: No se encontró el preset "${nombrePreset}"`);
+      }
+    });
+  });
+
+  // Evento para eliminar preset
+  eliminarPresetBtn.addEventListener('click', () => {
+    const nombrePreset = presetSelect.value;
+    if (nombrePreset === '') {
+      alert('Por favor, selecciona un preset para eliminar');
+      return;
+    }
+
+    if (confirm(`¿Estás seguro de que deseas eliminar el preset "${nombrePreset}"?`)) {
+      chrome.storage.local.get(['presets'], (result) => {
+        const presets = result.presets || {};
+        
+        if (presets[nombrePreset]) {
+          delete presets[nombrePreset];
+          
+          chrome.storage.local.set({ presets }, () => {
+            alert(`Preset "${nombrePreset}" eliminado correctamente`);
+            cargarListaPresets();
+          });
+        } else {
+          alert(`Error: No se encontró el preset "${nombrePreset}"`);
+        }
+      });
+    }
+  });
+}
+
+// Función para cargar la lista de presets en el selector
+function cargarListaPresets() {
+  const presetSelect = document.getElementById('preset-select');
+  
+  // Limpiar opciones actuales
+  while (presetSelect.options.length > 1) {
+    presetSelect.remove(1);
+  }
+  
+  // Cargar presets desde storage
+  chrome.storage.local.get(['presets'], (result) => {
+    const presets = result.presets || {};
+    
+    // Agregar cada preset como una opción
+    Object.keys(presets).forEach(nombrePreset => {
+      const option = document.createElement('option');
+      option.value = nombrePreset;
+      option.textContent = nombrePreset;
+      presetSelect.appendChild(option);
+    });
+  });
+}
+
+// Función para obtener la configuración actual
+function obtenerConfiguracionActual() {
+  // Obtener valores de volumen
+  const volumen = parseFloat(document.getElementById('volumen').value);
+  
+  // Obtener valores de filtros dinámicos
+  const filtrosDinamicos = [];
+  const filtrosContainer = document.getElementById('filtros-container');
+  const filtrosElements = filtrosContainer.querySelectorAll('.filtro-dinamico');
+  
+  filtrosElements.forEach(filtroElement => {
+    const id = filtroElement.dataset.id;
+    const frecuencia = parseFloat(filtroElement.querySelector('.frecuencia').value);
+    const q = parseFloat(filtroElement.querySelector('.q').value);
+    const ganancia = parseFloat(filtroElement.querySelector('.ganancia').value);
+    const bypass = filtroElement.querySelector('.bypass').checked;
+    
+    filtrosDinamicos.push({
+      id,
+      frecuencia,
+      q,
+      ganancia,
+      bypass
+    });
+  });
+  
+  // Obtener configuración del compresor
+  const compresorActivo = document.getElementById('compresor-activo').checked;
+  const threshold = parseFloat(document.getElementById('threshold').value);
+  const ratio = parseFloat(document.getElementById('ratio').value);
+  const knee = parseFloat(document.getElementById('knee').value);
+  const attack = parseFloat(document.getElementById('attack').value);
+  const release = parseFloat(document.getElementById('release').value);
+  
+  // Crear objeto de configuración
+  return {
+    volumen,
+    filtrosDinamicos,
+    compresor: {
+      activo: compresorActivo,
+      threshold,
+      ratio,
+      knee,
+      attack,
+      release
+    },
+    darkMode: document.body.classList.contains('dark-mode')
+  };
+}
+
+// Función para aplicar una configuración cargada
+async function aplicarConfiguracion(config) {
+  console.log("Aplicando configuración:", config);
+  
+  // Aplicar volumen
+  const volumenSlider = document.getElementById('volumen');
+  volumenSlider.value = config.volumen;
+  updateVolumeText(config.volumen);
+  
+  // Aplicar modo oscuro
+  const darkModeCheckbox = document.getElementById('dark-mode');
+  if (config.darkMode) {
+    document.body.classList.add('dark-mode');
+    darkModeCheckbox.checked = true;
+  } else {
+    document.body.classList.remove('dark-mode');
+    darkModeCheckbox.checked = false;
+  }
+  
+  // Aplicar configuración del compresor
+  const compresorActivoCheckbox = document.getElementById('compresor-activo');
+  const thresholdSlider = document.getElementById('threshold');
+  const ratioSlider = document.getElementById('ratio');
+  const kneeSlider = document.getElementById('knee');
+  const attackSlider = document.getElementById('attack');
+  const releaseSlider = document.getElementById('release');
+  
+  compresorActivoCheckbox.checked = config.compresor.activo;
+  compresorActivo = config.compresor.activo;
+  
+  thresholdSlider.value = config.compresor.threshold;
+  compresorParams.threshold = config.compresor.threshold;
+  actualizarValorCompresor('threshold', config.compresor.threshold);
+  
+  ratioSlider.value = config.compresor.ratio;
+  compresorParams.ratio = config.compresor.ratio;
+  actualizarValorCompresor('ratio', config.compresor.ratio);
+  
+  kneeSlider.value = config.compresor.knee;
+  compresorParams.knee = config.compresor.knee;
+  actualizarValorCompresor('knee', config.compresor.knee);
+  
+  attackSlider.value = config.compresor.attack;
+  compresorParams.attack = config.compresor.attack;
+  actualizarValorCompresor('attack', config.compresor.attack);
+  
+  releaseSlider.value = config.compresor.release;
+  compresorParams.release = config.compresor.release;
+  actualizarValorCompresor('release', config.compresor.release);
+  
+  // Limpiar filtros dinámicos actuales
+  const filtrosContainer = document.getElementById('filtros-container');
+  filtrosContainer.innerHTML = '';
+  
+  // Importar la función necesaria para crear filtros
+  try {
+    if (config.filtrosDinamicos && config.filtrosDinamicos.length > 0) {
+      // Corregir los nombres de propiedades para que coincidan con lo que espera filters_handling.js
+      const filtrosCorregidos = config.filtrosDinamicos.map(filtro => ({
+        id: filtro.id,
+        freq: filtro.frecuencia || filtro.freq, // Soportar ambos formatos
+        q: filtro.q,
+        gain: filtro.ganancia || filtro.gain, // Soportar ambos formatos
+        bypass: filtro.bypass
+      }));
+      
+      console.log("Filtros corregidos:", filtrosCorregidos);
+      
+      // Guardar los filtros en el storage local para que cargarFiltros los encuentre
+      chrome.storage.local.set({ filtrosDinamicos: filtrosCorregidos }, async () => {
+        // Importar el módulo y llamar a cargarFiltros
+        const filtersModule = await import('./filters_handling.js');
+        filtersModule.cargarFiltros();
+        
+        // Enviar configuración al offscreen si está capturando audio
+        if (capturingAudio) {
+          enviarConfiguracionAlOffscreen(config);
+        }
+      });
+    } else {
+      // Si no hay filtros, solo enviar la configuración del compresor y volumen
+      if (capturingAudio) {
+        enviarConfiguracionAlOffscreen(config);
+      }
+    }
+  } catch (error) {
+    console.error("Error al cargar los filtros:", error);
+  }
+  
+  // Guardar el estado actualizado
+  guardarEstado();
+}
+
+// Función para enviar la configuración al offscreen
+async function enviarConfiguracionAlOffscreen(config) {
+  const tabId = await getActiveTabId();
+  
+  // Enviar configuración del volumen
+  chrome.runtime.sendMessage({
+    type: "ajustar-volumen",
+    target: "offscreen",
+    tabId,
+    level: dbToGain(config.volumen)
+  });
+  
+  // Enviar configuración del compresor
+  await enviarConfiguracionCompresor();
 }
 
 // Función para inicializar los controles del compresor
