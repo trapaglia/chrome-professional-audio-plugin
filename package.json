@@ -1,0 +1,23 @@
+{
+  "name": "chrome-professional-audio-plugin",
+  "version": "1.0.0",
+  "description": "",
+  "main": "popup.js",
+  "scripts": {
+    "build:ts": "tsc",
+    "build:copy": "copyfiles -u 1 public/**/* src/**/*.js dist",
+    "build": "npm run build:ts && npm run build:copy",
+    "watch": "tsc --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trapaglia/chrome-professional-audio-plugin.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/trapaglia/chrome-professional-audio-plugin/issues"
+  },
+  "homepage": "https://github.com/trapaglia/chrome-professional-audio-plugin#readme"
+}
