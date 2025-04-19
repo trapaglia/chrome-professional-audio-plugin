@@ -4,9 +4,7 @@
   "description": "",
   "main": "popup.js",
   "scripts": {
-    "build:ts": "tsc",
-    "build:copy": "copyfiles -u 1 public/**/* src/**/*.js dist",
-    "build": "npm run build:ts && npm run build:copy",
+    "build": "node build.mjs",
     "watch": "tsc --watch"
   },
   "repository": {

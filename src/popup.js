@@ -1,4 +1,5 @@
 import { cargarFiltros } from "./filters_handling.js";
+import { smoothPoints } from "./smooth.js";
 
 let capturingAudio = false;
 let offscreenPort = null;
@@ -364,55 +365,10 @@ function drawVisualizer(data) {
     }
   }
   
-  // Aplicar suavizado a los puntos (promedio móvil)
-  const smoothPoints = (points, windowSize) => {
-    if (points.length <= windowSize) return points;
-    
-    const smoothed = [];
-    
-    // Primer punto se mantiene igual
-    smoothed.push(points[0]);
-    
-    // Aplicar suavizado adaptativo: ventana más pequeña para bajas frecuencias, más grande para altas
-    for (let i = 1; i < points.length - 1; i++) {
-      // Calcular tamaño de ventana adaptativo basado en la posición x (frecuencia)
-      // Más suavizado en altas frecuencias (x más grande)
-      const adaptiveWindow = Math.min(
-        Math.max(
-          2, // Mínimo tamaño de ventana
-          // Math.floor(windowSize * (points[i].x / canvas.width) * 4)
-          Math.floor(windowSize * Math.pow((points[i].x / canvas.width), 2) * 3)
-        ), 
-        // Math.min(windowSize, Math.floor(points.length / 4)) // Limitar tamaño máximo
-      );
-      
-      // Calcular índices para la ventana
-      const halfWindow = Math.floor(adaptiveWindow / 2);
-      const startIdx = Math.max(0, i - halfWindow);
-      const endIdx = Math.min(points.length - 1, i + halfWindow);
-      
-      // Calcular promedio de valores y en la ventana
-      let sumY = 0;
-      for (let j = startIdx; j <= endIdx; j++) {
-        sumY += points[j].y;
-      }
-      
-      const avgY = sumY / (endIdx - startIdx + 1);
-      smoothed.push({ x: points[i].x, y: avgY });
-    }
-    
-    // Último punto se mantiene igual
-    if (points.length > 1) {
-      smoothed.push(points[points.length - 1]);
-    }
-    
-    return smoothed;
-  };
-  
   // Aplicar suavizado a los puntos
-  const smoothedPrePoints = smoothPoints(prePoints, 7);
-  const smoothedMidPoints = smoothPoints(midPoints, 7); 
-  const smoothedPostPoints = smoothPoints(postPoints, 7);
+  const smoothedPrePoints = smoothPoints(prePoints, 7, canvas.width);
+  const smoothedMidPoints = smoothPoints(midPoints, 7, canvas.width); 
+  const smoothedPostPoints = smoothPoints(postPoints, 7, canvas.width);
   
   // Efecto glow
   ctx.shadowBlur = 10;
