@@ -1,5 +1,4 @@
-import { cargarFiltros } from "./filters_handling.js";
-import { setActiveFrequencyMarker, getActiveFrequencyMarker, setActiveQMarker, getActiveQMarker } from "./config.js";
+import { cargarFiltros } from "./filters_interface.js";
 import { drawVisualizer } from "./visualizer.js";
 
 let capturingAudio = false;
@@ -538,7 +537,7 @@ async function aplicarConfiguracion(config) {
       // Guardar los filtros en el storage local para que cargarFiltros los encuentre
       chrome.storage.local.set({ filtrosDinamicos: filtrosCorregidos }, async () => {
         // Importar el módulo y llamar a cargarFiltros
-        const filtersModule = await import('./filters_handling.js');
+        const filtersModule = await import('./filters_interface.js');
         filtersModule.cargarFiltros();
         
         // Enviar configuración al offscreen si está capturando audio

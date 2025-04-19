@@ -27,6 +27,20 @@ copyRecursive(publicDir, distDir);
 console.log("📁 Copiando JS no migrado desde src/");
 copyJS(srcDir, distDir);
 
+import { build as esbuild } from "esbuild";
+
+await esbuild({
+  entryPoints: ["src/visualizer.ts"],
+  bundle: true,
+  outfile: "dist/visualizer.js",
+  format: "esm", // formato compatible con content scripts
+  // format: "iife", // formato compatible con content scripts
+  minify: true,
+  sourcemap: true,
+  target: ["chrome58"], // extensiones
+});
+
+
 function copyRecursive(from, to) {
   if (!fs.existsSync(from)) return;
 
@@ -52,7 +66,7 @@ function copyJS(from, to) {
 
     if (fs.statSync(srcPath).isDirectory()) {
       copyJS(srcPath, to); // recursivo
-    } else if (file.endsWith(".js")) {
+    } else if (file.endsWith(".jsG")) {
       fs.copyFileSync(srcPath, destPath);
     }
   }

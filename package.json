@@ -17,5 +17,9 @@
   "bugs": {
     "url": "https://github.com/trapaglia/chrome-professional-audio-plugin/issues"
   },
-  "homepage": "https://github.com/trapaglia/chrome-professional-audio-plugin#readme"
+  "homepage": "https://github.com/trapaglia/chrome-professional-audio-plugin#readme",
+  "devDependencies": {
+    "@types/chrome": "^0.0.315",
+    "esbuild": "^0.25.2"
+  }
 }
