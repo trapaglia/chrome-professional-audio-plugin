@@ -241,10 +241,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   cargarEstado();
 });
 
-export async function getActiveTabId() {
+window.getActiveTabId = async function () {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return tab.id;
-}
+};
+// export async function getActiveTabId() {
+//   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+//   return tab.id;
+// }
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "visualizer-data" && msg.data) {

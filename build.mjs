@@ -66,7 +66,7 @@ function copyJS(from, to) {
 
     if (fs.statSync(srcPath).isDirectory()) {
       copyJS(srcPath, to); // recursivo
-    } else if (file.endsWith(".jsG")) {
+    } else if (file.endsWith(".js")) {
       fs.copyFileSync(srcPath, destPath);
     }
   }
