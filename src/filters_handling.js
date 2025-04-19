@@ -1,4 +1,6 @@
-import { getActiveTabId, updateFrequencyMarker, updateQMarker } from "./popup.js";
+import { getActiveTabId } from "./popup.js";
+import { setActiveFrequencyMarker, setActiveQMarker } from "./config.js";
+
 const MIN_FREQ = 20;    // 20 Hz
 const MAX_FREQ = 20000; // 20 kHz
 const OCTAVE_RANGE = Math.log2(MAX_FREQ / MIN_FREQ); // Aproximadamente 10 octavas
@@ -83,18 +85,18 @@ function crearFiltroCard(filtro) {
         filtro.freq = frecuencia;
         enviarActualizacion(filtro);
         guardarFiltros();
-        updateFrequencyMarker(filtro.freq);
-        updateQMarker(filtro.q);
+        setActiveFrequencyMarker(filtro.freq);
+        setActiveQMarker(filtro.q);
     });
 
     freqSlider.addEventListener("mouseenter", () => {
-        updateFrequencyMarker(filtro.freq);
-        updateQMarker(filtro.q);
+        setActiveFrequencyMarker(filtro.freq);
+        setActiveQMarker(filtro.q);
     });
 
     freqSlider.addEventListener("mouseleave", () => {
-        updateFrequencyMarker(null);
-        updateQMarker(null);
+        setActiveFrequencyMarker(null);
+        setActiveQMarker(null);
     });
 
     contenedor.querySelector(".q").addEventListener("input", (e) => {
@@ -102,17 +104,17 @@ function crearFiltroCard(filtro) {
         filtro.q = parseFloat(e.target.value);
         enviarActualizacion(filtro);
         guardarFiltros();
-        updateQMarker(filtro.q);
+        setActiveQMarker(filtro.q);
     });
 
     contenedor.querySelector(".q").addEventListener("mouseenter", () => {
-        updateFrequencyMarker(filtro.freq);
-        updateQMarker(filtro.q);
+        setActiveFrequencyMarker(filtro.freq);
+        setActiveQMarker(filtro.q);
     });
 
     contenedor.querySelector(".q").addEventListener("mouseleave", () => {
-        updateFrequencyMarker(null);
-        updateQMarker(null);
+        setActiveFrequencyMarker(null);
+        setActiveQMarker(null);
     });
 
     contenedor.querySelector(".gain").addEventListener("input", (e) => {
@@ -141,8 +143,8 @@ function crearFiltroCard(filtro) {
         });
         
         guardarFiltros();
-        updateFrequencyMarker(null);
-        updateQMarker(null);
+        setActiveFrequencyMarker(null);
+        setActiveQMarker(null);
     });
 
     document.getElementById("filtros-container").appendChild(contenedor);

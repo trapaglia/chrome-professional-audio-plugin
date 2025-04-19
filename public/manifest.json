@@ -24,5 +24,11 @@
       "resources": ["offscreen.html", "offscreen.js"],
       "matches": ["<all_urls>"]
     }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["visualizer.js"]
+    }
   ]
 }
