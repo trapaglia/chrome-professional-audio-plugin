@@ -1,5 +1,4 @@
 import { setActiveFrequencyMarker, setActiveQMarker } from "./config.js";
-// import { getActiveTabId } from "./popup.js";
 
 const MIN_FREQ = 20;    // 20 Hz
 const MAX_FREQ = 20000; // 20 kHz

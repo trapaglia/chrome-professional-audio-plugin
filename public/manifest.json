@@ -28,7 +28,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["visualizer.js"]
+      "js": ["visualizer.js", "state_memory.js", "compressor.js"]
     }
   ]
 }
