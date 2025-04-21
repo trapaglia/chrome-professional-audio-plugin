@@ -1,9 +1,10 @@
 import { cargarFiltros } from "./filters_interface.js";
 import { drawVisualizer } from "./visualizer.js";
 import { capturingAudio } from "./state_memory.js"
-import { staticFiltering } from "./config.js";
+import { staticFiltering, filters } from "./config.js";
+import { inicializarCompresor } from "./compressor.js";
+import { cargarEstado } from "./state_memory.js";
 
-let capturingAudio = false;
 let offscreenPort = null;
 let loops = null;
 let boton = null;
