@@ -1,0 +1,146 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #fef6f9;
+  color: #333;
+  width: 600px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Estilos para el modo oscuro */
+body.dark-mode {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+
+.container {
+  padding: 1em;
+  text-align: center;
+}
+
+input[type="range"] {
+  width: 100%;
+  margin-top: 10px;
+  height: 6px;
+  border-radius: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(to right, #d0d0ff, #a0a0ff);
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #7070ff;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: background 0.3s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: #5050ff;
+}
+
+#agregar-filtro {
+  margin: 0 auto;
+  padding: 8px 16px;
+  background-color: #e0e0ff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#agregar-filtro:hover {
+  background-color: #c0c0ff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+#agregar-filtro:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+#visual {
+  display: block;
+  background-color: #fefefe;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin: 15px auto;
+  transition: background-color 0.3s;
+}
+
+/* Estilos adicionales para el modo oscuro */
+.dark-mode canvas {
+  filter: brightness(0.9) contrast(1.1);
+  background-color: #121212 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+}
+
+.dark-mode button {
+  background-color: #333;
+  color: #e0e0e0;
+  border: 1px solid #555;
+}
+
+.dark-mode #agregar-filtro {
+  background-color: #2d2d5a;
+  color: #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.dark-mode #agregar-filtro:hover {
+  background-color: #3d3d7a;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+}
+
+.dark-mode #agregar-filtro:active {
+  background-color: #252550;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Estilos para los filtros en modo oscuro */
+.dark-mode .filtro-card {
+  background-color: #2a2a2a !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+}
+
+.dark-mode .eliminar {
+  background-color: #4a2a2a !important;
+  color: #e0e0e0 !important;
+}
+
+/* Ajustes para los controles en modo oscuro */
+.dark-mode input[type="range"] {
+  background: linear-gradient(to right, #303060, #505090);
+}
+
+.dark-mode input[type="range"]::-webkit-slider-thumb {
+  background: #6060a0;
+  border: 2px solid #202030;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.dark-mode input[type="range"]::-webkit-slider-thumb:hover {
+  background: #7070b0;
+}
+
+.dark-mode input[type="checkbox"] {
+  accent-color: #4a4a8c;
+}
+
+/* Ajustes para las etiquetas de frecuencia en modo oscuro */
+.dark-mode #frequency-bands + div {
+  color: #aaa;
+}

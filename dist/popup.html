@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ecualizador 🎚️</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🎧 Ecualizador</h1>
+    <button id="activar">Activar Audio</button><br><br>
+    <button id="debug">Debug Button</button><br><br>
+    <input type="checkbox" id="static-filtering" name="static-filtering" value="true">
+    <label for="static-filtering">Activar filtrado estático</label><br>
+    <input type="checkbox" id="bypass-dynamic-filters" name="bypass-dynamic-filters" value="true">
+    <label for="bypass-dynamic-filters">Bypasear filtros dinámicos</label><br>
+    <input type="checkbox" id="dark-mode" name="dark-mode" value="true">
+    <label for="dark-mode">Modo oscuro</label><br><br>
+
+    <label> Volumen <span id="volumen-value">0 dB</span>
+    <input type="range" id="volumen" min="-30" max="30" value="0" style="width: 100%;"></label>
+
+    <!-- Sección de Compresor -->
+    <div id="compresor-container" style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0;">Compresor</h3>
+        <label style="display: flex; align-items: center;">
+          <input type="checkbox" id="compresor-activo" name="compresor-activo" value="true">
+          <span style="margin-left: 5px;">Activar</span>
+        </label>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: auto 1fr auto; grid-gap: 5px 10px; align-items: center;">
+        <label for="threshold">Threshold:</label>
+        <input type="range" id="threshold" min="-60" max="0" value="-24" step="1" style="width: 100%;">
+        <span id="threshold-value">-24 dB</span>
+        
+        <label for="ratio">Ratio:</label>
+        <input type="range" id="ratio" min="1" max="20" value="4" step="0.5" style="width: 100%;">
+        <span id="ratio-value">4:1</span>
+        
+        <label for="knee">Knee:</label>
+        <input type="range" id="knee" min="0" max="40" value="30" step="1" style="width: 100%;">
+        <span id="knee-value">30 dB</span>
+        
+        <label for="attack">Attack:</label>
+        <input type="range" id="attack" min="0" max="1" value="0.003" step="0.001" style="width: 100%;">
+        <span id="attack-value">3 ms</span>
+        
+        <label for="release">Release:</label>
+        <input type="range" id="release" min="0" max="1" value="0.25" step="0.01" style="width: 100%;">
+        <span id="release-value">250 ms</span>
+      </div>
+    </div>
+
+    <!-- Sección de Presets -->
+    <div style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+      <h3 style="margin: 0 0 10px 0;">Presets</h3>
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <input type="text" id="preset-name" placeholder="Nombre del preset" style="flex: 1; padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+        <button id="guardar-preset" style="background-color: #4CAF50; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Guardar</button>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <select id="preset-select" style="flex: 1; padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+          <option value="">Seleccionar preset...</option>
+        </select>
+        <button id="cargar-preset" style="background-color: #2196F3; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Cargar</button>
+        <button id="eliminar-preset" style="background-color: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Eliminar</button>
+      </div>
+    </div>
+
+    <div id="filtros-container" style="display: flex; flex-direction: column; gap: 6px; margin: 10px auto; width: 100%; max-width: 380px;"></div>
+
+    <button id="agregar-filtro">+ Agregar Filtro</button>
+
+    <script type="module" src="filters_interface.js"></script>
+
+    <!-- Barra de referencia de bandas de frecuencia -->
+    <div id="frequency-bands" style="display: flex; width: 600px; height: 15px; margin: 10px 0 0 0; border-radius: 3px; overflow: hidden;">
+      <div title="Subgraves (60 Hz): Boom profundo, cine" style="flex: 1.2; background-color: #3D2C8D; height: 100%;"></div>
+      <div title="Bajos bajos (160 Hz): Bassline" style="flex: 1.3; background-color: #7A4069; height: 100%;"></div>
+      <div title="Bajos medios (400 Hz): Calor del cuerpo" style="flex: 1.0; background-color: #C060A1; height: 100%;"></div>
+      <div title="Medios (1000 Hz): Voces, teclas" style="flex: 1.5; background-color: #F0997D; height: 100%;"></div>
+      <div title="Medios altos (2500 Hz): Guitarras, definición" style="flex: 1.2; background-color: #FFC3A1; height: 100%;"></div>
+      <div title="Altos (6000 Hz): Brillantez sin ser filosa" style="flex: 0.9; background-color: #A1EEBD; height: 100%;"></div>
+      <div title="Presencia (10000 Hz): Aire, hi-hats, texturas" style="flex: 0.8; background-color: #7BD3EA; height: 100%;"></div>
+    </div>
+    <div style="display: flex; width: 600px; justify-content: space-between; font-size: 10px; color: #888; margin-bottom: 5px;">
+      <span style="margin-left: 10px;">15Hz</span>
+      <span style="margin-left: 5px;">60Hz</span>
+      <span style="margin-left: 5px;">120Hz</span>
+      <span style="margin-left: 5px;">240Hz</span>
+      <span style="margin-left: 5px;">500Hz</span>
+      <span style="margin-left: 5px;">1kHz</span>
+      <span style="margin-left: 5px;">2kHz</span>
+      <span style="margin-left: 5px;">5kHz</span>
+      <span style="margin-left: 5px;">10kHz</span>
+      <span style="margin-left: 1px;">17kHz</span>
+    </div>
+
+    <canvas id="visual" width="580" height="200"></canvas>
+    <p id="estado"></p>
+
+  </div>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
+
+<!--
+Nombre	Tipo	Frecuencia	Uso
+Subgraves	lowshelf	60 Hz	Boom profundo, cine
+Bajos bajos	peaking	160 Hz	Bassline
+Bajos medios	peaking	400 Hz	Calor del cuerpo
+Medios	peaking	1000 Hz	Voces, teclas
+Medios altos	peaking	2500 Hz	Guitarras, definición
+Altos	peaking	6000 Hz	Brillantez sin ser filosa
+Presencia	highshelf	10000 Hz	Aire, hi-hats, texturas
+-->

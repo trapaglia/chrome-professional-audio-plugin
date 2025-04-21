@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Sweet EQ Offscreen",
+  "version": "1.0",
+  "description": "Ecualizador con offscreen document 💖",
+  "permissions": [
+    "offscreen",
+    "tabCapture",
+    "storage",
+    "scripting",
+    "tabs",
+    "activeTab"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "listen.png"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["offscreen.html", "offscreen.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["visualizer.js", "state_memory.js", "compressor.js"]
+    }
+  ]
+}
