@@ -16,12 +16,21 @@ interface EstadoMods {
     gainAudio: number;
 };
 
+export function saveValue(valueName: string, value: any) {
+    chrome.storage.local.set({ [valueName]: value });
+}
 
 // Función para cargar el estado guardado
 export function cargarEstado() {
   chrome.storage.local.get("estado", function(data) {
     if (data.estado) {
       const estado = data.estado as EstadoMods;
+      capturingAudio = estado.capturingAudio;
+      if (capturingAudio) {
+        const boton = document.getElementById("activar");
+        if (!boton) throw new Error("No se encontró el botón de activar");
+        boton.textContent = "Detener Audio 🔇";
+      }
       
       // Cargar volumen
       if (estado.gainAudio !== undefined) {
@@ -112,4 +121,36 @@ export function guardarEstado() {
     gainAudio: parseFloat(volumen.value)
   };
   chrome.storage.local.set(estado);
+}
+
+// Función para cargar la lista de presets en el selector
+export function cargarListaPresets() {
+  const presetSelect = document.getElementById('preset-select') as HTMLSelectElement;
+  if (!presetSelect) throw new Error("No se encontró el selector de presets");
+  
+  // Limpiar opciones actuales
+  while (presetSelect.options.length > 1) {
+    presetSelect.remove(1);
+  }
+  
+  // Cargar presets desde storage
+  chrome.storage.local.get(['presets'], (result) => {
+    const presets = result.presets || {};
+    
+    // Agregar cada preset como una opción
+    Object.keys(presets).forEach(nombrePreset => {
+      const option = document.createElement('option');
+      option.value = nombrePreset;
+      option.textContent = nombrePreset;
+      presetSelect.appendChild(option);
+    });
+  });
+}
+
+export async function clearStorage() {
+  console.log("[INFO] Primera apertura del popup desde la inicialización - Limpiando storage");
+  // Limpiar todas las variables guardadas
+  await chrome.storage.local.clear();
+  // Guardar que el audio está desactivado
+  chrome.storage.local.set({ capturingAudio: false });
 }

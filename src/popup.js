@@ -1,34 +1,14 @@
 import { cargarFiltros } from "./filters_interface.js";
 import { drawVisualizer } from "./visualizer.js";
-import { capturingAudio } from "./state_memory.js"
 import { staticFiltering, filters } from "./config.js";
 import { inicializarCompresor } from "./compressor.js";
-import { cargarEstado } from "./state_memory.js";
+import { capturingAudio } from "./state_memory.js"
+import { guardarEstado, cargarEstado, cargarListaPresets, clearStorage, saveValue } from "./state_memory.js";
 
 let offscreenPort = null;
 let loops = null;
-let boton = null;
 let debug_counter = 1;
 
-chrome.storage.local.get(["volumen", ...filters, "capturingAudio", "darkMode"], (data) => {
-  Object.entries(data).forEach(([key, value]) => {
-    if (key === "darkMode") {
-      if (value) {
-        document.body.classList.add('dark-mode');
-        document.getElementById('dark-mode').checked = true;
-      }
-    } else {
-      const el = document.getElementById(key);
-      if (el) el.value = value;
-    }
-  });
-
-  if (data.capturingAudio) {
-    capturingAudio = true;
-    if (boton==null) boton = document.getElementById("activar");
-    boton.textContent = "Detener Audio 🔇";
-  }
-});
 
 // Sender
 function sendMessagePromise(message) {
@@ -45,12 +25,14 @@ function sendMessagePromise(message) {
 
 // Wait for zhe DOM to load
 document.addEventListener('DOMContentLoaded', async () => {
-  boton = document.getElementById("activar");
-  const estado = document.getElementById("estado");
-  const debug = document.getElementById("debug");
+  const boton = document.getElementById("activar");
+  const debugLabel = document.getElementById("estado");
+  const debugButton = document.getElementById("debug");
 
   // Inicializar los botones de presets
   inicializarPresets();
+  // Cargar estado guardado
+  cargarEstado();
 
   // Verificar si es la primera vez que se abre el popup desde la inicialización
   try {
@@ -60,11 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     
     if (response && response.isFirstOpen) {
-      console.log("[INFO] Primera apertura del popup desde la inicialización - Limpiando storage");
-      // Limpiar todas las variables guardadas
-      await chrome.storage.local.clear();
-      // Guardar que el audio está desactivado
-      chrome.storage.local.set({ capturingAudio: false });
+      await clearStorage();
     }
   } catch (error) {
     console.error("[ERROR] Error al verificar primera apertura:", error);
@@ -74,16 +52,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   chrome.runtime.sendMessage({ type: "offscreen-wakeup", target: "background" });
 
-  chrome.storage.local.get(['capturingAudio'], function(result) {
-    capturingAudio = result.capturingAudio || false;
-
-    if (capturingAudio) {
-      boton.textContent = "Detener Audio 🔇";
-      openOffscreenPort();
-    } else {
-      boton.textContent = "Activar Audio 🎤";
-    }
-  });
+  if (capturingAudio) {
+    boton.textContent = "Detener Audio 🔇";
+    openOffscreenPort();
+  } else {
+    boton.textContent = "Activar Audio 🎤";
+  }
 
   chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     // conexion P2P
@@ -94,8 +68,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  debug.addEventListener("click", async () => {
+  debugButton.addEventListener("click", async () => {
     console.log("Debug button clicked");
+    debugLabel.textContent = "Debugging...";
     chrome.runtime.sendMessage({ type: "debug" , tabId: await getActiveTabId()});
   });
 
@@ -127,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ...eqValores,
       });
       boton.textContent = "Detener Audio 🔇";
-      capturingAudio = true;
+      saveValue("capturingAudio", true);
       if (offscreenPort) {
         offscreenPort.postMessage({ type: "start-stream", tabId });
       } else {
@@ -139,14 +114,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("[WARNING] No hay puerto offscreen");
         return;
       }
-      estado.textContent = "Deteniendo audio..." + debug_counter++;
+      debugLabel.textContent = "Deteniendo audio..." + debug_counter++;
       await chrome.runtime.sendMessage({
         type: "stop-processing",
         target: "offscreen",
         tabId,
       });
       boton.textContent = "Activar Audio 🎤";
-      capturingAudio = false;
+      saveValue("capturingAudio", false);
       cancelAnimationFrame(loops);
       loops = null;
     }
@@ -367,28 +342,6 @@ function inicializarPresets() {
   });
 }
 
-// Función para cargar la lista de presets en el selector
-function cargarListaPresets() {
-  const presetSelect = document.getElementById('preset-select');
-  
-  // Limpiar opciones actuales
-  while (presetSelect.options.length > 1) {
-    presetSelect.remove(1);
-  }
-  
-  // Cargar presets desde storage
-  chrome.storage.local.get(['presets'], (result) => {
-    const presets = result.presets || {};
-    
-    // Agregar cada preset como una opción
-    Object.keys(presets).forEach(nombrePreset => {
-      const option = document.createElement('option');
-      option.value = nombrePreset;
-      option.textContent = nombrePreset;
-      presetSelect.appendChild(option);
-    });
-  });
-}
 
 // Función para obtener la configuración actual
 function obtenerConfiguracionActual() {
