@@ -1,5 +1,5 @@
-import { smoothPoints } from "./utils.js";
-import { getActiveFrequencyMarker, getActiveQMarker } from "./config.js";
+import { smoothPoints } from "./utils.ts";
+import { getActiveFrequencyMarker, getActiveQMarker } from "./config.ts";
 
 type VisualizerData = {
     pre: number[];

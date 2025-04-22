@@ -1,6 +1,6 @@
-import { setCompresorActivo, getCompresorActivo, setCompresorParam, getCompresorParam, compresorActivo, compresorParams } from "./config.js";
-import { guardarEstado, localEstado } from "./state_memory.js";
-import { enviarConfiguracionCompresor } from "./communications.js";
+import { setCompresorActivo, getCompresorActivo, setCompresorParam, getCompresorParam, compresorActivo, compresorParams } from "./config.ts";
+import { guardarEstado, localEstado } from "./state_memory.ts";
+import { enviarConfiguracionCompresor } from "./communications.ts";
 
 
 export type Compresor = {

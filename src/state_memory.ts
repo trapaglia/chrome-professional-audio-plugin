@@ -1,6 +1,6 @@
 import { getCompresorActivo, getCompresorParam, setCompresorActivo, setCompresorParam, staticFiltering, 
     filters
- } from "./config.js";
+ } from "./config.ts";
 interface EstadoMods {
     capturingAudio: boolean;
     darkMode: boolean;

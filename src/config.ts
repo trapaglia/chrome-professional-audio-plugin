@@ -1,4 +1,4 @@
-import { Compresor, actualizarValorCompresor } from "./compressor.js";
+import { Compresor, actualizarValorCompresor } from "./compressor.ts";
 export let activeFrequencyMarker: number | null = null;
 export let activeQMarker: number | null = null;
 export let compresorActivo: boolean = false;

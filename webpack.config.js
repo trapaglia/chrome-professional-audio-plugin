@@ -5,7 +5,7 @@ module.exports = {
     background: './src/background.ts',
     filters_interface: './src/filters_interface.ts',
     popup: './src/popup.js',
-    compressors: './src/compressors.ts',
+    compressor: './src/compressor.ts',
     state_memory: './src/state_memory.ts',
     communications: './src/communications.ts',
     visualizer: './src/visualizer.ts',
@@ -21,10 +21,15 @@ module.exports = {
     rules: [
       {
         test: /\.js$/,
-        exclude: /node_modules/,
         use: {
           loader: 'babel-loader',
         },
+        exclude: /node_modules/,
+      },
+      {
+        test: /\.ts$/,
+        use: 'babel-loader',
+        exclude: /node_modules/,
       },
     ],
   },

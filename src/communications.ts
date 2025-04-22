@@ -1,7 +1,7 @@
-import { dbToGain } from "./utils.js";
-import { ConfiguracionInterface } from "./interface.js";
-import { localEstado } from "./state_memory.js";
-import { compresorActivo, compresorParams } from "./config.js";
+import { dbToGain } from "./utils.ts";
+import { ConfiguracionInterface } from "./interface.ts";
+import { localEstado } from "./state_memory.ts";
+import { compresorActivo, compresorParams } from "./config.ts";
 
 // Función para enviar la configuración al offscreen
 export async function enviarConfiguracionAlOffscreen(config: ConfiguracionInterface) {

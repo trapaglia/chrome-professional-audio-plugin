@@ -1,8 +1,8 @@
-import { guardarEstado } from "./state_memory.js";
-import { compresorParams, setCompresorActivo } from "./config.js";
-import { actualizarValorCompresor } from "./compressor.js";
-import { localEstado } from "./state_memory.js";
-import { enviarConfiguracionAlOffscreen } from "./communications.js";
+import { guardarEstado } from "./state_memory.ts";
+import { compresorParams, setCompresorActivo } from "./config.ts";
+import { actualizarValorCompresor } from "./compressor.ts";
+import { localEstado } from "./state_memory.ts";
+import { enviarConfiguracionAlOffscreen } from "./communications.ts";
 
 // Función para aplicar una configuración cargada
 export async function aplicarConfiguracion(config: ConfiguracionInterface) {
@@ -72,7 +72,7 @@ export async function aplicarConfiguracion(config: ConfiguracionInterface) {
       // Guardar los filtros en el storage local para que cargarFiltros los encuentre
       chrome.storage.local.set({ filtrosDinamicos: config.filtrosDinamicos }, async () => {
         // Importar el módulo y llamar a cargarFiltros
-        const filtersModule = await import('./filters_interface.js');
+        const filtersModule = await import('./filters_interface.ts');
         filtersModule.cargarFiltros();
         
         // Enviar configuración al offscreen si está capturando audio
