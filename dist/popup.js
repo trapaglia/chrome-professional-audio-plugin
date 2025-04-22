@@ -31,9 +31,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   debugLabel.textContent = "Cargando...";
 
   // Inicializar los botones de presets
+  console.log("Inicializando presets...")
   inicializarPresets();
   // Cargar estado guardado
+  console.log("Inicializando cargandoEstado...")
   cargarEstado();
+  console.log("Estado cargado")
   
   // Verificar si es la primera vez que se abre el popup desde la inicialización
   try {

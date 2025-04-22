@@ -4,6 +4,7 @@ import { staticFiltering, filters } from "./config.js";
 import { inicializarCompresor } from "./compressor.js";
 import { localEstado } from "./state_memory.js"
 import { guardarEstado, cargarEstado, cargarListaPresets, clearStorage, saveValue } from "./state_memory.js";
+import { aplicarConfiguracion, updateVolumeText } from "./interface.js";
 
 let offscreenPort = null;
 let loops = null;
@@ -31,9 +32,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   debugLabel.textContent = "Cargando...";
 
   // Inicializar los botones de presets
+  console.log("Inicializando presets...")
   inicializarPresets();
   // Cargar estado guardado
+  console.log("Inicializando cargandoEstado...")
   cargarEstado();
+  console.log("Estado cargado")
   
   // Verificar si es la primera vez que se abre el popup desde la inicialización
   try {
@@ -204,13 +208,6 @@ function dbToGain(db) {
   return Math.pow(10, db / 20);
 }
 
-// Actualizar el texto del valor de volumen en dB
-function updateVolumeText(dbValue) {
-  const volumeValueElement = document.getElementById("volumen-value");
-  if (volumeValueElement) {
-    volumeValueElement.textContent = `${dbValue} dB`;
-  }
-}
 
 async function updateVisualizer() {
   async function loop() {
@@ -338,150 +335,6 @@ function inicializarPresets() {
       });
     }
   });
-}
-
-
-// Función para obtener la configuración actual
-function obtenerConfiguracionActual() {
-  // Obtener valores de volumen
-  const volumen = parseFloat(document.getElementById('volumen').value);
-  
-  // Obtener valores de filtros dinámicos
-  const filtrosDinamicos = [];
-  const filtrosContainer = document.getElementById('filtros-container');
-  const filtrosElements = filtrosContainer.querySelectorAll('.filtro-dinamico');
-  
-  filtrosElements.forEach(filtroElement => {
-    const id = filtroElement.dataset.id;
-    const frecuencia = parseFloat(filtroElement.querySelector('.frecuencia').value);
-    const q = parseFloat(filtroElement.querySelector('.q').value);
-    const ganancia = parseFloat(filtroElement.querySelector('.ganancia').value);
-    const bypass = filtroElement.querySelector('.bypass').checked;
-    
-    filtrosDinamicos.push({
-      id,
-      frecuencia,
-      q,
-      ganancia,
-      bypass
-    });
-  });
-  
-  // Obtener configuración del compresor
-  const compresorActivo = document.getElementById('compresor-activo').checked;
-  const threshold = parseFloat(document.getElementById('threshold').value);
-  const ratio = parseFloat(document.getElementById('ratio').value);
-  const knee = parseFloat(document.getElementById('knee').value);
-  const attack = parseFloat(document.getElementById('attack').value);
-  const release = parseFloat(document.getElementById('release').value);
-  
-  // Crear objeto de configuración
-  return {
-    volumen,
-    filtrosDinamicos,
-    compresor: {
-      activo: compresorActivo,
-      threshold,
-      ratio,
-      knee,
-      attack,
-      release
-    },
-    darkMode: document.body.classList.contains('dark-mode')
-  };
-}
-
-// Función para aplicar una configuración cargada
-async function aplicarConfiguracion(config) {
-  console.log("Aplicando configuración:", config);
-  
-  // Aplicar volumen
-  const volumenSlider = document.getElementById('volumen');
-  volumenSlider.value = config.volumen;
-  updateVolumeText(config.volumen);
-  
-  // Aplicar modo oscuro
-  const darkModeCheckbox = document.getElementById('dark-mode');
-  if (config.darkMode) {
-    document.body.classList.add('dark-mode');
-    darkModeCheckbox.checked = true;
-  } else {
-    document.body.classList.remove('dark-mode');
-    darkModeCheckbox.checked = false;
-  }
-  
-  // Aplicar configuración del compresor
-  const compresorActivoCheckbox = document.getElementById('compresor-activo');
-  const thresholdSlider = document.getElementById('threshold');
-  const ratioSlider = document.getElementById('ratio');
-  const kneeSlider = document.getElementById('knee');
-  const attackSlider = document.getElementById('attack');
-  const releaseSlider = document.getElementById('release');
-  
-  compresorActivoCheckbox.checked = config.compresor.activo;
-  compresorActivo = config.compresor.activo;
-  
-  thresholdSlider.value = config.compresor.threshold;
-  compresorParams.threshold = config.compresor.threshold;
-  actualizarValorCompresor('threshold', config.compresor.threshold);
-  
-  ratioSlider.value = config.compresor.ratio;
-  compresorParams.ratio = config.compresor.ratio;
-  actualizarValorCompresor('ratio', config.compresor.ratio);
-  
-  kneeSlider.value = config.compresor.knee;
-  compresorParams.knee = config.compresor.knee;
-  actualizarValorCompresor('knee', config.compresor.knee);
-  
-  attackSlider.value = config.compresor.attack;
-  compresorParams.attack = config.compresor.attack;
-  actualizarValorCompresor('attack', config.compresor.attack);
-  
-  releaseSlider.value = config.compresor.release;
-  compresorParams.release = config.compresor.release;
-  actualizarValorCompresor('release', config.compresor.release);
-  
-  // Limpiar filtros dinámicos actuales
-  const filtrosContainer = document.getElementById('filtros-container');
-  filtrosContainer.innerHTML = '';
-  
-  // Importar la función necesaria para crear filtros
-  try {
-    if (config.filtrosDinamicos && config.filtrosDinamicos.length > 0) {
-      // Corregir los nombres de propiedades para que coincidan con lo que espera filters_handling.js
-      const filtrosCorregidos = config.filtrosDinamicos.map(filtro => ({
-        id: filtro.id,
-        freq: filtro.frecuencia || filtro.freq, // Soportar ambos formatos
-        q: filtro.q,
-        gain: filtro.ganancia || filtro.gain, // Soportar ambos formatos
-        bypass: filtro.bypass
-      }));
-      
-      console.log("Filtros corregidos:", filtrosCorregidos);
-      
-      // Guardar los filtros en el storage local para que cargarFiltros los encuentre
-      chrome.storage.local.set({ filtrosDinamicos: filtrosCorregidos }, async () => {
-        // Importar el módulo y llamar a cargarFiltros
-        const filtersModule = await import('./filters_interface.js');
-        filtersModule.cargarFiltros();
-        
-        // Enviar configuración al offscreen si está capturando audio
-        if (localEstado.capturingAudio) {
-          enviarConfiguracionAlOffscreen(config);
-        }
-      });
-    } else {
-      // Si no hay filtros, solo enviar la configuración del compresor y volumen
-      if (localEstado.capturingAudio) {
-        enviarConfiguracionAlOffscreen(config);
-      }
-    }
-  } catch (error) {
-    console.error("Error al cargar los filtros:", error);
-  }
-  
-  // Guardar el estado actualizado
-  guardarEstado();
 }
 
 // Función para enviar la configuración al offscreen
