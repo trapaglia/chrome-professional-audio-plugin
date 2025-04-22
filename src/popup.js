@@ -1,11 +1,11 @@
-import { cargarFiltros } from "./filters_interface.js";
-import { drawVisualizer } from "./visualizer.js";
-import { staticFiltering, filters } from "./config.js";
-import { inicializarCompresor } from "./compressor.js";
-import { localEstado } from "./state_memory.js"
-import { guardarEstado, cargarEstado, cargarListaPresets, clearStorage, saveValue } from "./state_memory.js";
-import { aplicarConfiguracion, updateVolumeText } from "./interface.js";
-import { dbToGain } from "./utils.js";
+import { cargarFiltros } from "./filters_interface.ts";
+import { drawVisualizer } from "./visualizer.ts";
+import { staticFiltering, filters } from "./config.ts";
+import { inicializarCompresor } from "./compressor.ts";
+import { localEstado } from "./state_memory.ts"
+import { guardarEstado, cargarEstado, cargarListaPresets, clearStorage, saveValue } from "./state_memory.ts";
+import { aplicarConfiguracion, updateVolumeText } from "./interface.ts";
+import { dbToGain } from "./utils.ts";
 
 let offscreenPort = null;
 let loops = null;
