@@ -31,11 +31,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   debugLabel.textContent = "Cargando...";
 
   // Inicializar los botones de presets
-  // inicializarPresets();
+  inicializarPresets();
   // Cargar estado guardado
   cargarEstado();
-  debugLabel.textContent = "estado Cargado";
-
+  
   // Verificar si es la primera vez que se abre el popup desde la inicialización
   try {
     const response = await sendMessagePromise({
@@ -127,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       loops = null;
       saveValue("capturingAudio", false);
     }
-    debugLabel.textContent = "Estado guardado, capturingAudio: " + localEstado.capturingAudio;
+
     guardarEstado();
   });
 
@@ -182,10 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Inicializar controles del compresor
-  // inicializarCompresor();
-  
-  // Cargar el estado guardado
-  // cargarEstado();
+  inicializarCompresor();
 });
 
 window.getActiveTabId = async function () {

@@ -4,7 +4,7 @@ chrome.runtime.onStartup.addListener(function() {
   chrome.storage.local.clear();
 });
 
-let popupOpenedBefore = false;
+let popupOpenedBefore: boolean = false;
 
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {

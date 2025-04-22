@@ -33,6 +33,9 @@ export function cargarEstado() {
     if (data.estado) {
       const estado = data.estado as EstadoMods;
       localEstado = estado;
+
+      console.log("[INFO] Estado cargado:", estado);
+
       if (localEstado.capturingAudio) {
         const botonActivar = document.getElementById("activar");
         if (!botonActivar) throw new Error("No se encontró el botón de activar");
@@ -128,6 +131,7 @@ export function guardarEstado() {
     gainAudio: parseFloat(volumen.value)
   };
   chrome.storage.local.set({ "estado": estado });
+  console.log("[INFO] Estado guardado:", estado);
 }
 
 // Función para cargar la lista de presets en el selector
