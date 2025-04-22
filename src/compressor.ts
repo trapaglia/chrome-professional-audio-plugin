@@ -1,5 +1,5 @@
 import { setCompresorActivo, getCompresorActivo, setCompresorParam, getCompresorParam, compresorActivo, compresorParams } from "./config.js";
-import { guardarEstado, capturingAudio } from "./state_memory.js";
+import { guardarEstado, localEstado } from "./state_memory.js";
 
 export type Compresor = {
     threshold: number;
@@ -103,7 +103,7 @@ export function actualizarValorCompresor(tipo: keyof Compresor, valor: number) {
 
 // Función para enviar la configuración del compresor al script offscreen
 async function enviarConfiguracionCompresor() {
-  if (capturingAudio) {
+  if (localEstado.capturingAudio) {
     const tabId = await getActiveTabId();
     chrome.runtime.sendMessage({
       type: "ajustar-compresor",

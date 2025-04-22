@@ -29,16 +29,16 @@ copyJS(srcDir, distDir);
 
 import { build as esbuild } from "esbuild";
 
-await esbuild({
-  entryPoints: ["src/visualizer.ts"],
-  bundle: true,
-  outfile: "dist/visualizer.js",
-  format: "esm", // formato compatible con content scripts
-  // format: "iife", // formato compatible con content scripts
-  minify: true,
-  sourcemap: true,
-  target: ["chrome58"], // extensiones
-});
+// await esbuild({
+//   entryPoints: ["src/visualizer.ts"],
+//   bundle: true,
+//   outfile: "dist/visualizer.js",
+//   format: "esm", // formato compatible con content scripts
+//   // format: "iife", // formato compatible con content scripts
+//   minify: true,
+//   sourcemap: true,
+//   target: ["chrome58"], // extensiones
+// });
 
 
 function copyRecursive(from, to) {

@@ -2,7 +2,7 @@ import { cargarFiltros } from "./filters_interface.js";
 import { drawVisualizer } from "./visualizer.js";
 import { staticFiltering, filters } from "./config.js";
 import { inicializarCompresor } from "./compressor.js";
-import { capturingAudio } from "./state_memory.js"
+import { localEstado } from "./state_memory.js"
 import { guardarEstado, cargarEstado, cargarListaPresets, clearStorage, saveValue } from "./state_memory.js";
 
 let offscreenPort = null;
@@ -25,7 +25,7 @@ function sendMessagePromise(message) {
 
 // Wait for zhe DOM to load
 document.addEventListener('DOMContentLoaded', async () => {
-  const boton = document.getElementById("activar");
+  const botonCaptura = document.getElementById("activar");
   const debugLabel = document.getElementById("estado");
   const debugButton = document.getElementById("debug");
   debugLabel.textContent = "Cargando...";
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   inicializarPresets();
   // Cargar estado guardado
   cargarEstado();
-
+  
   // Verificar si es la primera vez que se abre el popup desde la inicialización
   try {
     const response = await sendMessagePromise({
@@ -53,11 +53,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   chrome.runtime.sendMessage({ type: "offscreen-wakeup", target: "background" });
 
-  if (capturingAudio) {
-    boton.textContent = "Detener Audio 🔇";
+  if (localEstado.capturingAudio) {
+    botonCaptura.textContent = "Detener Audio 🔇";
     openOffscreenPort();
   } else {
-    boton.textContent = "Activar Audio 🎤";
+    botonCaptura.textContent = "Activar Audio 🎤";
   }
 
   chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -75,10 +75,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.runtime.sendMessage({ type: "debug" , tabId: await getActiveTabId()});
   });
 
-  boton.addEventListener("click", async () => {
+  botonCaptura.addEventListener("click", async () => {
     const tabId = await getActiveTabId();
 
-    if (!capturingAudio) {
+    if (!localEstado.capturingAudio) {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
       console.log("entre isActive")
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         level: dbToGain(parseFloat(document.getElementById("volumen").value)),
         ...eqValores,
       });
-      boton.textContent = "Detener Audio 🔇";
+      botonCaptura.textContent = "Detener Audio 🔇";
       saveValue("capturingAudio", true);
       if (offscreenPort) {
         offscreenPort.postMessage({ type: "start-stream", tabId });
@@ -121,10 +121,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         target: "offscreen",
         tabId,
       });
-      boton.textContent = "Activar Audio 🎤";
-      saveValue("capturingAudio", false);
+      botonCaptura.textContent = "Activar Audio 🎤";
       cancelAnimationFrame(loops);
       loops = null;
+      saveValue("capturingAudio", false);
     }
 
     guardarEstado();
@@ -182,9 +182,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Inicializar controles del compresor
   inicializarCompresor();
-  
-  // Cargar el estado guardado
-  cargarEstado();
 });
 
 window.getActiveTabId = async function () {
@@ -469,13 +466,13 @@ async function aplicarConfiguracion(config) {
         filtersModule.cargarFiltros();
         
         // Enviar configuración al offscreen si está capturando audio
-        if (capturingAudio) {
+        if (localEstado.capturingAudio) {
           enviarConfiguracionAlOffscreen(config);
         }
       });
     } else {
       // Si no hay filtros, solo enviar la configuración del compresor y volumen
-      if (capturingAudio) {
+      if (localEstado.capturingAudio) {
         enviarConfiguracionAlOffscreen(config);
       }
     }

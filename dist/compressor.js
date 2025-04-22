@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { setCompresorActivo, setCompresorParam, compresorActivo, compresorParams } from "./config.js";
-import { guardarEstado, capturingAudio } from "./state_memory.js";
+import { guardarEstado, localEstado } from "./state_memory.js";
 // Función para inicializar los controles del compresor
 export function inicializarCompresor() {
     const compresorActivoCheckbox = document.getElementById('compresor-activo');
@@ -112,7 +112,7 @@ export function actualizarValorCompresor(tipo, valor) {
 // Función para enviar la configuración del compresor al script offscreen
 function enviarConfiguracionCompresor() {
     return __awaiter(this, void 0, void 0, function* () {
-        if (capturingAudio) {
+        if (localEstado.capturingAudio) {
             const tabId = yield getActiveTabId();
             chrome.runtime.sendMessage({
                 type: "ajustar-compresor",

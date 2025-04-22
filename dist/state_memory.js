@@ -8,22 +8,27 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { getCompresorActivo, getCompresorParam, setCompresorActivo, setCompresorParam } from "./config.js";
-export let capturingAudio = false;
 ;
+export let localEstado = {};
 export function saveValue(valueName, value) {
-    chrome.storage.local.set({ [valueName]: value });
+    chrome.storage.local.get("estado", (data) => {
+        const estado = data.estado || {};
+        estado[valueName] = value;
+        chrome.storage.local.set({ estado });
+    });
+    localEstado[valueName] = value;
 }
 // Función para cargar el estado guardado
 export function cargarEstado() {
     chrome.storage.local.get("estado", function (data) {
         if (data.estado) {
             const estado = data.estado;
-            capturingAudio = estado.capturingAudio;
-            if (capturingAudio) {
-                const boton = document.getElementById("activar");
-                if (!boton)
+            localEstado = estado;
+            if (localEstado.capturingAudio) {
+                const botonActivar = document.getElementById("activar");
+                if (!botonActivar)
                     throw new Error("No se encontró el botón de activar");
-                boton.textContent = "Detener Audio 🔇";
+                botonActivar.textContent = "Detener Audio 🔇";
             }
             // Cargar volumen
             if (estado.gainAudio !== undefined) {
@@ -105,7 +110,7 @@ export function guardarEstado() {
     if (!volumen)
         throw new Error("No se encontró el slider de volumen");
     const estado = {
-        capturingAudio: capturingAudio,
+        capturingAudio: localEstado.capturingAudio,
         darkMode: document.body.classList.contains('dark-mode'),
         compresor: {
             activo: getCompresorActivo(),
@@ -117,7 +122,7 @@ export function guardarEstado() {
         },
         gainAudio: parseFloat(volumen.value)
     };
-    chrome.storage.local.set(estado);
+    chrome.storage.local.set({ "estado": estado });
 }
 // Función para cargar la lista de presets en el selector
 export function cargarListaPresets() {
@@ -147,5 +152,6 @@ export function clearStorage() {
         yield chrome.storage.local.clear();
         // Guardar que el audio está desactivado
         chrome.storage.local.set({ capturingAudio: false });
+        localEstado = {};
     });
 }

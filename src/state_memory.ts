@@ -1,7 +1,6 @@
 import { getCompresorActivo, getCompresorParam, setCompresorActivo, setCompresorParam, staticFiltering, 
     filters
  } from "./config.js";
-export let capturingAudio: boolean = false;
 interface EstadoMods {
     capturingAudio: boolean;
     darkMode: boolean;
@@ -15,9 +14,17 @@ interface EstadoMods {
     };
     gainAudio: number;
 };
+type elementoGuardado = keyof EstadoMods; // "capturingAudio" | "darkMode" | "compresor" | "gainAudio"
+export let localEstado: EstadoMods = {} as EstadoMods;
 
-export function saveValue(valueName: string, value: any) {
-    chrome.storage.local.set({ [valueName]: value });
+
+export function saveValue<T extends elementoGuardado>(valueName: T, value: any) {
+    chrome.storage.local.get("estado", (data) => {
+        const estado: EstadoMods = data.estado || {} as EstadoMods;
+        estado[valueName] = value;
+        chrome.storage.local.set({ estado });
+    });
+    localEstado[valueName] = value;
 }
 
 // Función para cargar el estado guardado
@@ -25,11 +32,11 @@ export function cargarEstado() {
   chrome.storage.local.get("estado", function(data) {
     if (data.estado) {
       const estado = data.estado as EstadoMods;
-      capturingAudio = estado.capturingAudio;
-      if (capturingAudio) {
-        const boton = document.getElementById("activar");
-        if (!boton) throw new Error("No se encontró el botón de activar");
-        boton.textContent = "Detener Audio 🔇";
+      localEstado = estado;
+      if (localEstado.capturingAudio) {
+        const botonActivar = document.getElementById("activar");
+        if (!botonActivar) throw new Error("No se encontró el botón de activar");
+        botonActivar.textContent = "Detener Audio 🔇";
       }
       
       // Cargar volumen
@@ -105,10 +112,10 @@ export function cargarEstado() {
 
 // Guardar y restaurar estado de los 8 sliders + estado de audio
 export function guardarEstado() {
-  const volumen = document.getElementById("volumen") as HTMLInputElement;
+  const volumen = document.getElementById("volumen") as HTMLInputElement | null;
   if (!volumen) throw new Error("No se encontró el slider de volumen");
   const estado: EstadoMods = { 
-    capturingAudio: capturingAudio,
+    capturingAudio: localEstado.capturingAudio,
     darkMode: document.body.classList.contains('dark-mode'),
     compresor: {
       activo: getCompresorActivo(),
@@ -120,7 +127,7 @@ export function guardarEstado() {
     },
     gainAudio: parseFloat(volumen.value)
   };
-  chrome.storage.local.set(estado);
+  chrome.storage.local.set({ "estado": estado });
 }
 
 // Función para cargar la lista de presets en el selector
@@ -153,4 +160,5 @@ export async function clearStorage() {
   await chrome.storage.local.clear();
   // Guardar que el audio está desactivado
   chrome.storage.local.set({ capturingAudio: false });
+  localEstado = {} as EstadoMods;
 }
