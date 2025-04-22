@@ -5,6 +5,7 @@ import { inicializarCompresor } from "./compressor.js";
 import { localEstado } from "./state_memory.js"
 import { guardarEstado, cargarEstado, cargarListaPresets, clearStorage, saveValue } from "./state_memory.js";
 import { aplicarConfiguracion, updateVolumeText } from "./interface.js";
+import { dbToGain } from "./utils.js";
 
 let offscreenPort = null;
 let loops = null;
@@ -192,10 +193,6 @@ window.getActiveTabId = async function () {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return tab.id;
 };
-// export async function getActiveTabId() {
-//   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-//   return tab.id;
-// }
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "visualizer-data" && msg.data) {
@@ -203,10 +200,6 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 });
 
-// Función para convertir dB a valor de ganancia para Web Audio API
-function dbToGain(db) {
-  return Math.pow(10, db / 20);
-}
 
 
 async function updateVisualizer() {
@@ -337,18 +330,3 @@ function inicializarPresets() {
   });
 }
 
-// Función para enviar la configuración al offscreen
-async function enviarConfiguracionAlOffscreen(config) {
-  const tabId = await getActiveTabId();
-  
-  // Enviar configuración del volumen
-  chrome.runtime.sendMessage({
-    type: "ajustar-volumen",
-    target: "offscreen",
-    tabId,
-    level: dbToGain(config.volumen)
-  });
-  
-  // Enviar configuración del compresor
-  await enviarConfiguracionCompresor();
-}

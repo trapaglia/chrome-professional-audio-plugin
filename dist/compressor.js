@@ -7,8 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { setCompresorActivo, setCompresorParam, compresorActivo, compresorParams } from "./config.js";
-import { guardarEstado, localEstado } from "./state_memory.js";
+import { setCompresorActivo, setCompresorParam } from "./config.js";
+import { guardarEstado } from "./state_memory.js";
+import { enviarConfiguracionCompresor } from "./communications.js";
 // Función para inicializar los controles del compresor
 export function inicializarCompresor() {
     const compresorActivoCheckbox = document.getElementById('compresor-activo');
@@ -108,25 +109,4 @@ export function actualizarValorCompresor(tipo, valor) {
             valorElement.textContent = `${releaseMs} ms`;
             break;
     }
-}
-// Función para enviar la configuración del compresor al script offscreen
-function enviarConfiguracionCompresor() {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (localEstado.capturingAudio) {
-            const tabId = yield getActiveTabId();
-            chrome.runtime.sendMessage({
-                type: "ajustar-compresor",
-                target: "offscreen",
-                tabId,
-                activo: compresorActivo,
-                params: {
-                    threshold: compresorParams.threshold,
-                    ratio: compresorParams.ratio,
-                    knee: compresorParams.knee,
-                    attack: compresorParams.attack,
-                    release: compresorParams.release
-                }
-            });
-        }
-    });
 }

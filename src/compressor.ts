@@ -1,5 +1,7 @@
 import { setCompresorActivo, getCompresorActivo, setCompresorParam, getCompresorParam, compresorActivo, compresorParams } from "./config.js";
 import { guardarEstado, localEstado } from "./state_memory.js";
+import { enviarConfiguracionCompresor } from "./communications.js";
+
 
 export type Compresor = {
     threshold: number;
@@ -98,25 +100,5 @@ export function actualizarValorCompresor(tipo: keyof Compresor, valor: number) {
       const releaseMs = (valor * 1000).toFixed(0);
       valorElement.textContent = `${releaseMs} ms`;
       break;
-  }
-}
-
-// Función para enviar la configuración del compresor al script offscreen
-async function enviarConfiguracionCompresor() {
-  if (localEstado.capturingAudio) {
-    const tabId = await getActiveTabId();
-    chrome.runtime.sendMessage({
-      type: "ajustar-compresor",
-      target: "offscreen",
-      tabId,
-      activo: compresorActivo,
-      params: {
-        threshold: compresorParams.threshold,
-        ratio: compresorParams.ratio,
-        knee: compresorParams.knee,
-        attack: compresorParams.attack,
-        release: compresorParams.release
-      }
-    });
   }
 }

@@ -21,3 +21,7 @@ export function smoothPoints(points, windowSize, canvasWidth) {
     }
     return smoothed;
 }
+// Función para convertir dB a valor de ganancia para Web Audio API
+export function dbToGain(db) {
+    return Math.pow(10, db / 20);
+}
