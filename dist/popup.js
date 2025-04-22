@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Cargar estado guardado
   console.log("Inicializando cargandoEstado...")
   cargarEstado();
-  console.log("Estado cargado")
+  console.log("Estado cargado:", localEstado);
   
   // Verificar si es la primera vez que se abre el popup desde la inicialización
   try {
