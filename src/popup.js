@@ -4,7 +4,7 @@ import { staticFiltering, filters } from "./config.ts";
 import { inicializarCompresor } from "./compressor.ts";
 import { localEstado } from "./state_memory.ts"
 import { guardarEstado, cargarEstado, cargarListaPresets, clearStorage, saveValue } from "./state_memory.ts";
-import { aplicarConfiguracion, updateVolumeText } from "./interface.ts";
+import { aplicarConfiguracion, updateVolumeText, obtenerConfiguracionActual } from "./interface.ts";
 import { dbToGain } from "./utils.ts";
 
 let offscreenPort = null;

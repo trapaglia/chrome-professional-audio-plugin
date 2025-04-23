@@ -4,7 +4,7 @@ import { staticFiltering, filters } from "./config.ts";
 import { inicializarCompresor } from "./compressor.ts";
 import { localEstado } from "./state_memory.ts"
 import { guardarEstado, cargarEstado, cargarListaPresets, clearStorage, saveValue } from "./state_memory.ts";
-import { aplicarConfiguracion, updateVolumeText } from "./interface.ts";
+import { aplicarConfiguracion, updateVolumeText, obtenerConfiguracionActual } from "./interface.ts";
 import { dbToGain } from "./utils.ts";
 
 let offscreenPort = null;
@@ -59,10 +59,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   chrome.runtime.sendMessage({ type: "offscreen-wakeup", target: "background" });
 
   if (localEstado.capturingAudio) {
-    botonCaptura.textContent = "Detener Audio ";
+    botonCaptura.textContent = "Detener Audio 🔇";
     openOffscreenPort();
   } else {
-    botonCaptura.textContent = "Activar Audio ";
+    botonCaptura.textContent = "Activar Audio 🎤";
   }
 
   chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         level: dbToGain(parseFloat(document.getElementById("volumen").value)),
         ...eqValores,
       });
-      botonCaptura.textContent = "Detener Audio ";
+      botonCaptura.textContent = "Detener Audio 🔇";
       saveValue("capturingAudio", true);
       if (offscreenPort) {
         offscreenPort.postMessage({ type: "start-stream", tabId });
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         target: "offscreen",
         tabId,
       });
-      botonCaptura.textContent = "Activar Audio ";
+      botonCaptura.textContent = "Activar Audio 🎤";
       cancelAnimationFrame(loops);
       loops = null;
       saveValue("capturingAudio", false);

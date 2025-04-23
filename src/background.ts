@@ -16,7 +16,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       else console.log("[INFO] Offscreen document already exists")
       break;
     case "check-first-popup-open":
-      if (!popupOpenedBefore) {
+      if (!popupOpenedBefore && !(await chrome.offscreen.hasDocument())) {
         popupOpenedBefore = true;
         sendResponse({ isFirstOpen: true });
       } else {
