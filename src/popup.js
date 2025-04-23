@@ -14,14 +14,22 @@ let debug_counter = 1;
 
 // Sender
 function sendMessagePromise(message) {
+    console.log("[DEBUG] Enviando mensaje:", message);
     return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage(message, response => {
-            if (chrome.runtime.lastError) {
-                reject(chrome.runtime.lastError);
-            } else {
-                resolve(response);
-            }
-        });
+        try {
+            chrome.runtime.sendMessage(message, response => {
+                console.log("[DEBUG] Respuesta recibida en sendMessagePromise:", response);
+                if (chrome.runtime.lastError) {
+                    console.error("[DEBUG] Error en sendMessagePromise:", chrome.runtime.lastError);
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve(response);
+                }
+            });
+        } catch (err) {
+            console.error("[DEBUG] Error al enviar mensaje:", err);
+            reject(err);
+        }
     });
 }
 
@@ -42,20 +50,48 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Verificar si es la primera vez que se abre el popup desde la inicialización
   try {
-    const response = await sendMessagePromise({
+    console.log("[DEBUG] Verificando primera apertura del popup...");
+    
+    // En lugar de esperar una respuesta síncrona, enviamos el mensaje
+    // y configuramos un listener para la respuesta
+    chrome.runtime.sendMessage({
       type: "check-first-popup-open",
       target: "background"
     });
     
-    if (response && response.isFirstOpen) {
-      await clearStorage();
-    }
+    // Escuchamos por un mensaje específico desde el background 
+    // (agregaremos este handler en background.ts)
+    const handleFirstOpen = (message) => {
+      if (message.type === "first-open-response") {
+        console.log("[DEBUG] Respuesta de primera apertura recibida:", message);
+        
+        // Removemos el listener para evitar múltiples respuestas
+        chrome.runtime.onMessage.removeListener(handleFirstOpen);
+        
+        if (message.isFirstOpen) {
+          console.log("[DEBUG] Es primera apertura, limpiando storage...");
+          clearStorage().then(() => {
+            console.log("[DEBUG] Storage limpiado correctamente");
+          });
+        }
+      }
+    };
+    
+    // Agregamos el listener
+    chrome.runtime.onMessage.addListener(handleFirstOpen);
+    
   } catch (error) {
     console.error("[ERROR] Error al verificar primera apertura:", error);
+    console.log("[DEBUG] Tipo de error:", typeof error);
+    console.log("[DEBUG] Propiedades del error:", Object.keys(error));
+    if (error.message) console.log("[DEBUG] Mensaje de error:", error.message);
+    if (error.stack) console.log("[DEBUG] Stack trace:", error.stack);
   }
 
+  console.log("[DEBUG] Cargando filtros...");
   cargarFiltros();
 
+  console.log("[DEBUG] Enviando mensaje offscreen-wakeup...");
   chrome.runtime.sendMessage({ type: "offscreen-wakeup", target: "background" });
 
   if (localEstado.capturingAudio) {
