@@ -222,7 +222,7 @@ export function cargarFiltros() {
 }
 
 // Función para actualizar los filtros cuando cambia el tema
-function actualizarEstiloFiltros() {
+export function actualizarEstiloFiltros() {
     const isDarkMode = document.body.classList.contains('dark-mode');
     const filtroCards = document.querySelectorAll<HTMLElement>('.filtro-card');
     

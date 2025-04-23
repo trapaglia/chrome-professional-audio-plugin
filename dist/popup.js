@@ -1,4 +1,4 @@
-import { cargarFiltros } from "./filters_interface.ts";
+import { cargarFiltros, actualizarEstiloFiltros } from "./filters_interface.ts";
 import { drawVisualizer } from "./visualizer.ts";
 import { staticFiltering, filters } from "./config.ts";
 import { inicializarCompresor } from "./compressor.ts";
@@ -59,10 +59,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   chrome.runtime.sendMessage({ type: "offscreen-wakeup", target: "background" });
 
   if (localEstado.capturingAudio) {
-    botonCaptura.textContent = "Detener Audio 🔇";
+    botonCaptura.textContent = "Detener Audio ";
     openOffscreenPort();
   } else {
-    botonCaptura.textContent = "Activar Audio 🎤";
+    botonCaptura.textContent = "Activar Audio ";
   }
 
   chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         level: dbToGain(parseFloat(document.getElementById("volumen").value)),
         ...eqValores,
       });
-      botonCaptura.textContent = "Detener Audio 🔇";
+      botonCaptura.textContent = "Detener Audio ";
       saveValue("capturingAudio", true);
       if (offscreenPort) {
         offscreenPort.postMessage({ type: "start-stream", tabId });
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         target: "offscreen",
         tabId,
       });
-      botonCaptura.textContent = "Activar Audio 🎤";
+      botonCaptura.textContent = "Activar Audio ";
       cancelAnimationFrame(loops);
       loops = null;
       saveValue("capturingAudio", false);
@@ -142,6 +142,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       document.body.classList.remove('dark-mode');
     }
+    
+    // Actualizar estilos de los filtros cuando cambie el tema
+    actualizarEstiloFiltros();
+    
     guardarEstado();
   });
 
@@ -329,4 +333,3 @@ function inicializarPresets() {
     }
   });
 }
-

@@ -1,4 +1,4 @@
-import { cargarFiltros } from "./filters_interface.ts";
+import { cargarFiltros, actualizarEstiloFiltros } from "./filters_interface.ts";
 import { drawVisualizer } from "./visualizer.ts";
 import { staticFiltering, filters } from "./config.ts";
 import { inicializarCompresor } from "./compressor.ts";
@@ -142,6 +142,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       document.body.classList.remove('dark-mode');
     }
+    
+    // Actualizar estilos de los filtros cuando cambie el tema
+    actualizarEstiloFiltros();
+    
     guardarEstado();
   });
 
@@ -329,4 +333,3 @@ function inicializarPresets() {
     }
   });
 }
-
