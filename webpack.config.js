@@ -18,6 +18,11 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].bundle.js',
   },
+  mode: 'development',
+  devtool: 'inline-source-map',
+  optimization: {
+    minimize: false
+  },
   module: {
     rules: [
       {
