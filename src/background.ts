@@ -17,14 +17,16 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       break;
     case "check-first-popup-open":
       if (!popupOpenedBefore && !(await chrome.offscreen.hasDocument())) {
+        console.log("[INFO] Popup opened for the first time");
         popupOpenedBefore = true;
         sendResponse({ isFirstOpen: true });
       } else {
+        console.log("[INFO] Popup opened before");
         sendResponse({ isFirstOpen: false });
       }
       return true;
     default:
-      // console.log("[ERROR] message no identificado");
+      console.log("[ERROR] message no identificado");
       break;
   }
 
