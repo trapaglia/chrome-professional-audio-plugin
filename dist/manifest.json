@@ -16,19 +16,19 @@
     "default_icon": "listen.png"
   },
   "background": {
-    "service_worker": "background.js",
+    "service_worker": "background.bundle.js",
     "type": "module"
   },
   "web_accessible_resources": [
     {
-      "resources": ["offscreen.html", "offscreen.js"],
+      "resources": ["offscreen.html", "offscreen.bundle.js"],
       "matches": ["<all_urls>"]
     }
   ],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["visualizer.js", "state_memory.js", "compressor.js"]
+      "js": ["visualizer.bundle.js", "state_memory.bundle.js", "compressor.bundle.js"]
     }
   ]
 }
