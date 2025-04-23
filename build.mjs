@@ -17,7 +17,8 @@ fs.mkdirSync(distDir);
 
 // 💻 2. Compilar TypeScript
 console.log("🌀 Compilando TypeScript...");
-execSync("npx tsc", { stdio: "inherit" });
+// execSync("npx tsc", { stdio: "inherit" });
+execSync("npx webpack", { stdio: "inherit" });
 
 // 💋 3. Copiar archivos desde public/
 console.log("📁 Copiando archivos de public/");
@@ -27,7 +28,7 @@ copyRecursive(publicDir, distDir);
 console.log("📁 Copiando JS no migrado desde src/");
 copyJS(srcDir, distDir);
 
-import { build as esbuild } from "esbuild";
+// import { build as esbuild } from "esbuild";
 
 // await esbuild({
 //   entryPoints: ["src/visualizer.ts"],
