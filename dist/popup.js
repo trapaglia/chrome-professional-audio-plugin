@@ -6,6 +6,7 @@ import { localEstado } from "./state_memory.ts"
 import { guardarEstado, cargarEstado, cargarListaPresets, clearStorage, saveValue } from "./state_memory.ts";
 import { aplicarConfiguracion, updateVolumeText, obtenerConfiguracionActual } from "./interface.ts";
 import { dbToGain } from "./utils.ts";
+import { inicializarPresets, inicializarEventos } from "./events.ts";
 
 let offscreenPort = null;
 let loops = null;
@@ -250,86 +251,5 @@ async function openOffscreenPort () {
   }
 }
 
-// Función para inicializar los controles de presets
-function inicializarPresets() {
-  const guardarPresetBtn = document.getElementById('guardar-preset');
-  const cargarPresetBtn = document.getElementById('cargar-preset');
-  const eliminarPresetBtn = document.getElementById('eliminar-preset');
-  const presetNameInput = document.getElementById('preset-name');
-  const presetSelect = document.getElementById('preset-select');
-
-  // Cargar presets existentes
-  cargarListaPresets();
-
-  // Evento para guardar preset
-  guardarPresetBtn.addEventListener('click', () => {
-    const nombrePreset = presetNameInput.value.trim();
-    if (nombrePreset === '') {
-      alert('Por favor, ingresa un nombre para el preset');
-      return;
-    }
-
-    // Obtener configuración actual
-    const configuracion = obtenerConfiguracionActual();
-    
-    // Guardar en storage
-    chrome.storage.local.get(['presets'], (result) => {
-      const presets = result.presets || {};
-      presets[nombrePreset] = configuracion;
-      
-      chrome.storage.local.set({ presets }, () => {
-        alert(`Preset "${nombrePreset}" guardado correctamente`);
-        presetNameInput.value = '';
-        cargarListaPresets();
-      });
-    });
-  });
-
-  // Evento para cargar preset
-  cargarPresetBtn.addEventListener('click', () => {
-    const nombrePreset = presetSelect.value;
-    if (nombrePreset === '') {
-      alert('Por favor, selecciona un preset para cargar');
-      return;
-    }
-
-    chrome.storage.local.get(['presets'], (result) => {
-      const presets = result.presets || {};
-      const configuracion = presets[nombrePreset];
-      
-      if (configuracion) {
-        aplicarConfiguracion(configuracion);
-        console.log("Preset cargado:", configuracion);
-        alert(`Preset "${nombrePreset}" cargado correctamente`);
-      } else {
-        alert(`Error: No se encontró el preset "${nombrePreset}"`);
-      }
-    });
-  });
-
-  // Evento para eliminar preset
-  eliminarPresetBtn.addEventListener('click', () => {
-    const nombrePreset = presetSelect.value;
-    if (nombrePreset === '') {
-      alert('Por favor, selecciona un preset para eliminar');
-      return;
-    }
-
-    if (confirm(`¿Estás seguro de que deseas eliminar el preset "${nombrePreset}"?`)) {
-      chrome.storage.local.get(['presets'], (result) => {
-        const presets = result.presets || {};
-        
-        if (presets[nombrePreset]) {
-          delete presets[nombrePreset];
-          
-          chrome.storage.local.set({ presets }, () => {
-            alert(`Preset "${nombrePreset}" eliminado correctamente`);
-            cargarListaPresets();
-          });
-        } else {
-          alert(`Error: No se encontró el preset "${nombrePreset}"`);
-        }
-      });
-    }
-  });
-}
+inicializarPresets();
+// inicializarEventos();
