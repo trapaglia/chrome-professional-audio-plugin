@@ -2,7 +2,7 @@
   "name": "chrome-professional-audio-plugin",
   "version": "1.0.0",
   "description": "",
-  "main": "popup.js",
+  "main": "popup.ts",
   "scripts": {
     "build": "node build.mjs",
     "watch": "tsc --watch"

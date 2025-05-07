@@ -7,7 +7,7 @@
     "strict": true,
     "esModuleInterop": true,
     "paths": {
-      "popup": ["./popup.js"]
+      "popup": ["./popup.ts"]
     }
   },
   "include": ["src/**/*"]

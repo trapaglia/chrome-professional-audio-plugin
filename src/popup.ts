@@ -1,12 +1,12 @@
-import { cargarFiltros, actualizarEstiloFiltros } from "./filters_interface.js";
-import { drawVisualizer } from "./visualizer.js";
-import { staticFiltering, filters } from "./config.js";
-import { inicializarCompresor } from "./compressor.js";
-import { localEstado } from "./state_memory.js"
-import { guardarEstado, cargarEstado, clearStorage, saveValue } from "./state_memory.js";
-import { updateVolumeText } from "./interface.js";
-import { dbToGain } from "./utils.js";
-import { inicializarPresets } from "./events.js";
+import { cargarFiltros, actualizarEstiloFiltros } from "./filters_interface.ts";
+import { drawVisualizer } from "./visualizer.ts";
+import { staticFiltering, filters } from "./config.ts";
+import { inicializarCompresor } from "./compressor.ts";
+import { localEstado } from "./state_memory.ts"
+import { guardarEstado, cargarEstado, clearStorage, saveValue } from "./state_memory.ts";
+import { updateVolumeText } from "./interface.ts";
+import { dbToGain } from "./utils.ts";
+import { inicializarPresets } from "./events.ts";
 
 let offscreenPort: chrome.runtime.Port | null = null;
 let loops: number | null = null;

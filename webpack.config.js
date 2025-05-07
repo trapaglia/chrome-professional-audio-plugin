@@ -4,7 +4,7 @@ module.exports = {
   entry: {
     background: './src/background.ts',
     filters_interface: './src/filters_interface.ts',
-    popup: './src/popup.js',
+    popup: './src/popup.ts',
     compressor: './src/compressor.ts',
     state_memory: './src/state_memory.ts',
     communications: './src/communications.ts',
