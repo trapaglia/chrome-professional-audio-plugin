@@ -238,24 +238,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  filters.forEach((id) => {
-    const filterSlider = getElement(id) as HTMLInputElement | null;
-    if (filterSlider) {
-      filterSlider.addEventListener("input", async (e) => {
-        if (!e.target)
-          alert("[popup] Elemento '" + id + "' no encontrado");
-        const tabId = await getActiveTabId();
-        chrome.runtime.sendMessage({
-        type: "ajustar-filtro",
-        target: "offscreen",
-        tabId,
-        banda: id,
-        valor: parseFloat((e.target as HTMLInputElement).value),
+  if (staticFiltering) {
+    filters.forEach((id) => {
+      const filterSlider = getElement(id) as HTMLInputElement | null;
+      if (filterSlider) {
+        filterSlider.addEventListener("input", async (e) => {
+          if (!e.target)
+            alert("[popup] Elemento '" + id + "' no encontrado");
+          const tabId = await getActiveTabId();
+          chrome.runtime.sendMessage({
+          type: "ajustar-filtro",
+          target: "offscreen",
+          tabId,
+          banda: id,
+          valor: parseFloat((e.target as HTMLInputElement).value),
+          });
+        guardarEstado();
         });
-      guardarEstado();
-      });
-    }
-  });
+      }
+    });
+  }
   // Inicializar controles del compresor
   inicializarCompresor();
 });
