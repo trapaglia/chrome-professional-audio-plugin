@@ -1,5 +1,5 @@
 const filtrosDinamicos = new Map();
-const contexts = new Map();
+const contexts: Map<number, AudioContext> = new Map();
 const medias = new Map();
 const sources = new Map();
 let popupPort: chrome.runtime.Port | null = null;
@@ -39,7 +39,13 @@ chrome.runtime.onMessage.addListener(async (msg) => {
         alert("[offscreen] AudioContext no inicializado");
         return;
       }
-      const context = contexts.get(msg.tabId);
+      const contextMaybe = contexts.get(msg.tabId);
+      if (!contextMaybe) {
+        console.error("[offscreen] AudioContext no inicializado");
+        alert("[offscreen] AudioContext no inicializado");
+        return;
+      }
+      const context: AudioContext = contextMaybe;
       if (!sources.has(msg.tabId)) {
         console.error("[offscreen] MediaStreamSource no inicializado");
         alert("[offscreen] MediaStreamSource no inicializado");
@@ -91,8 +97,12 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       
       // Si el compresor no existe, crearlo
       if (!compressors.has(msg.tabId)) {
-        const context = contexts.get(msg.tabId);
-        const compressor = context.createDynamicsCompressor();
+        const context: AudioContext | undefined = contexts.get(msg.tabId);
+        if (!context) {
+          console.error("[offscreen] AudioContext no inicializado");
+          return;
+        }
+        const compressor: DynamicsCompressorNode = context.createDynamicsCompressor();
         compressors.set(msg.tabId, compressor);
       }
       
@@ -197,22 +207,22 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       console.log("[ERROR] Tab already capturing audio");
       return;
     }
-    const media = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        mandatory: {
-          chromeMediaSource: "tab",
-          chromeMediaSourceId: msg.streamId,
-        },
-      } as ChromeMediaTrackConstraints,
+    const mediaStreamConstraints: ChromeMediaTrackConstraints = {
+      mandatory: {
+        chromeMediaSource: "tab",
+        chromeMediaSourceId: msg.streamId,
+      },
+    };
+    const media: MediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: mediaStreamConstraints
     });
-    medias.set(msg.tabId, media);
+    medias.set(msg.tabId, media); 
 
-    const context = new AudioContext();
+    const context: AudioContext = new AudioContext();
     contexts.set(msg.tabId, context);
     const source = context.createMediaStreamSource(media);
     sources.set(msg.tabId, source);
     console.log("[INFO] AudioContext inicializado en tab " + msg.tabId);
-
 
     pre_viz.set(msg.tabId, new AnalyserNode(context, {
       fftSize: 2048,
@@ -530,7 +540,11 @@ function reconectarCadena(tabId: number) {
   }
   
   // Finalizar la cadena conectando el post-visualizador a la salida
-  post_viz.get(tabId).connect(context.destination);
+  if (context) {
+    post_viz.get(tabId).connect(context.destination);
+  } else {
+    console.error("[offscreen] No se pudo conectar el post-visualizador");
+  }
   
   console.log("[INFO] Cadena de audio reconectada");
 }
