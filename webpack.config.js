@@ -12,7 +12,7 @@ module.exports = {
     utils: './src/utils.ts',
     config: './src/config.ts',
     interface: './src/interface.ts',
-    offscreen: './src/offscreen.js',
+    offscreen: './src/offscreen.ts',
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
