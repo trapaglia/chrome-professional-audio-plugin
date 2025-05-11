@@ -2,7 +2,7 @@ const filtrosDinamicos = new Map();
 const contexts = new Map();
 const medias = new Map();
 const sources = new Map();
-let popupPort = null;
+let popupPort: chrome.runtime.Port | null = null;
 let loops = new Map();
 const pre_viz = new Map();
 const mid_viz = new Map(); // Nuevo analizador para visualizar antes del compresor
@@ -13,6 +13,20 @@ const compressorStates = new Map(); // Estado de activación del compresor
 // const bandas_filtros = ["sub", "bass", "lowMid", "mid", "highMid", "high", "air"];
 const staticFiltering = false;
 let offscreenInitialized = false;
+
+// Define Chrome-specific media constraints interface
+type ChromeMediaTrackConstraints = MediaTrackConstraints & {
+  mandatory: {
+    chromeMediaSource: string;
+    chromeMediaSourceId: string;
+  };
+}
+
+type DinamycFilter = {
+  node: BiquadFilterNode;
+  bypass: boolean;
+  id: string;
+};
 
 // 🎧 offscreen.js — gestión de filtros dinámicos de ecualización 🎛️
 
@@ -189,7 +203,7 @@ chrome.runtime.onMessage.addListener(async (msg) => {
           chromeMediaSource: "tab",
           chromeMediaSourceId: msg.streamId,
         },
-      },
+      } as ChromeMediaTrackConstraints,
     });
     medias.set(msg.tabId, media);
 
@@ -250,14 +264,16 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       popupPort.postMessage({ type: "start-stream" });
     }
 
-    const newFiltros = new Map();
+
+    const newFiltros: Map<string, DinamycFilter> = new Map();
     if (filtrosDinamicos.has(msg.tabId) && filtrosDinamicos.get(msg.tabId).size > 0) {
-      const f = Array.from(filtrosDinamicos.get(msg.tabId).values());
+      const f: DinamycFilter[] = Array.from(filtrosDinamicos.get(msg.tabId).values());
       f.forEach((filtro) => {
         filtro.node.disconnect();
-        const newFiltro = {
+        const newFiltro: DinamycFilter = {
           node: context.createBiquadFilter(),
-          bypass: filtro.bypass
+          bypass: filtro.bypass,
+          id: filtro.id
         };
         newFiltro.node.type = filtro.node.type;
         newFiltro.node.frequency.value = filtro.node.frequency.value;
@@ -329,14 +345,14 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       }
 
       if (staticFilters.has(msg.tabId)) {
-        const f = staticFilters.get(msg.tabId);
+        const f : Map<string, BiquadFilterNode> = staticFilters.get(msg.tabId);
         f.forEach((filtro) => {
           filtro.disconnect();
         });
       }
 
       if (filtrosDinamicos.has(msg.tabId) && filtrosDinamicos.get(msg.tabId).size > 0) {
-        const f = Array.from(filtrosDinamicos.get(msg.tabId).values());
+        const f: Map<string, DinamycFilter> = filtrosDinamicos.get(msg.tabId);
         f.forEach((filtro) => {
           filtro.node.disconnect();
           // filtrosDinamicos.get(msg.tabId).delete(filtro.id);
@@ -355,7 +371,7 @@ chrome.runtime.onMessage.addListener(async (msg) => {
 
       const media = medias.get(msg.tabId);
       if (media) {
-        media.getTracks().forEach(track => track.stop());
+        media.getTracks().forEach((track: MediaStreamTrack) => track.stop());
       }
       medias.delete(msg.tabId);
     }
@@ -363,7 +379,7 @@ chrome.runtime.onMessage.addListener(async (msg) => {
 
 });
 
-function setupEQ(context, msg) {
+function setupEQ(context: AudioContext, msg: { tabId: number, sub: number, bass: number, lowMid: number, mid: number, highMid: number, high: number, air: number }) {
   staticFilters.set(msg.tabId, new Map());
   const filters = staticFilters.get(msg.tabId);
 
@@ -420,7 +436,7 @@ function setupEQ(context, msg) {
 
 }
 
-function reconectarCadena(tabId) {
+function reconectarCadena(tabId: number) {
   if (!contexts.has(tabId) || !sources.has(tabId)) {
     console.log("[ERROR] No hay contexto o fuente para reconectar");
     return;
@@ -440,7 +456,7 @@ function reconectarCadena(tabId) {
   
   // Desconectar todos los filtros
   if (filtrosDinamicos.has(tabId)) {
-    filtrosDinamicos.get(tabId).forEach((filtro) => {
+    filtrosDinamicos.get(tabId).forEach((filtro: DinamycFilter) => {
       filtro.node.disconnect();
     });
   }
@@ -455,14 +471,15 @@ function reconectarCadena(tabId) {
   volumeNode.connect(pre_viz.get(tabId));
   
   // Crear un array con los filtros activos (no en bypass)
-  const filtrosActivos = [];
+  const filtrosActivos: BiquadFilterNode[] = [];
   if (filtrosDinamicos.has(tabId)) {
-    filtrosDinamicos.get(tabId).forEach((filtro, id) => {
+    const f: DinamycFilter[] = Array.from(filtrosDinamicos.get(tabId).values());
+    f.forEach((filtro) => {
       if (!filtro.bypass) {
         filtrosActivos.push(filtro.node);
-        console.log(`[INFO] Filtro ${id} añadido a la cadena (no está en bypass)`);
+        console.log(`[INFO] Filtro ${filtro.id} añadido a la cadena (no está en bypass)`);
       } else {
-        console.log(`[INFO] Filtro ${id} en bypass - no conectado`);
+        console.log(`[INFO] Filtro ${filtro.id} en bypass - no conectado`);
       }
     });
   }
@@ -527,7 +544,7 @@ function clearAllData() {
       // Detener todos los tracks de audio
       if (medias.has(tabId)) {
         const media = medias.get(tabId);
-        media.getTracks().forEach(track => track.stop());
+        media.getTracks().forEach((track: MediaStreamTrack) => track.stop());
       }
       
       // Cerrar el contexto de audio
