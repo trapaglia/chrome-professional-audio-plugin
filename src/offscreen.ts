@@ -355,7 +355,7 @@ chrome.runtime.onMessage.addListener(async (msg) => {
       }
 
       if (staticFilters.has(msg.tabId)) {
-        const f : Map<string, BiquadFilterNode> = staticFilters.get(msg.tabId);
+        const f : BiquadFilterNode[] = Array.from(staticFilters.get(msg.tabId).values());
         f.forEach((filtro) => {
           filtro.disconnect();
         });
